@@ -21,7 +21,7 @@ export function as C function and make sure function name ends with _kernel
 
 `cargo build --release --target wasm32-unknown-unknown --target-dir ./target`
 
-**Step 4  Convert .WASM file .WAT file:  **          
+**Step 4  Convert .WASM file .WAT file:**          
 
 `wasm2wat ./target/wasm32-unknown-unknown/release/*yourfile.wasm* -o ./target/wasm32-unknown-unknown/release/*yourfile.wat*`
 
@@ -43,11 +43,11 @@ let wasm_bytes = fs::read("test/*yourfile.wasm*").expect("Failed to read input.w
 
 `cargo clean`
 
-**Step 3  Build Cargo:     **  
+**Step 3  Build Cargo:**  
 
 `cargo build`
 
-**Step 4  Run Cargo (produces a ptx file called output.ptx in wasm2ptx):   **     
+**Step 4  Run Cargo (produces a ptx file called output.ptx in wasm2ptx):**     
 
 `cargo run`
 
@@ -62,10 +62,10 @@ let wasm_bytes = fs::read("test/*yourfile.wasm*").expect("Failed to read input.w
 
 `module load NVHPC/24.9-CUDA-12.6.0`
 
-**Step 3 Compile CUDA File and create executable        **
+**Step 3 Compile CUDA File and create executable**
 
 `nvcc my_ptx.cu -o run_ptx -lcuda`
 
-**Step 4 Run Executable     **
+**Step 4 Run Executable**
 
 ` ./run_ptx`
