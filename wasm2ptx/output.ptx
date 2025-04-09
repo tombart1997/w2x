@@ -1,0 +1,51 @@
+.version 8.0
+.target sm_80
+.visible .entry vector_add_kernel(
+    .param .u64 param9,
+    .param .u64 param10,
+    .param .u64 param11,
+    .param .u64 param12
+) {
+    .reg .u32 %r13, %r4, %r18, %r21, %r5, %r9, %r6, %r7, %r22, %r8, %r12;
+    .reg .u64 %rd1, %rd16, %rd2, %rd17, %rd20, %rd15, %rd14, %rd19, %rd3, %rd0;
+    .reg .pred %p10, %p11;
+
+
+    ld.param.u64 %rd0, [param9];    // vector a
+    ld.param.u64 %rd1, [param10];   // vector b
+    ld.param.u64 %rd2, [param11];   // vector c
+    ld.param.u64 %rd3, [param12];   // n 
+
+
+    block_1_start:
+    mov.u32 %r4, %ntid.x;
+    mov.u32 %r5, %ctaid.x;
+    mul.lo.s32 %r6, %r4, %r5;
+    mov.u32 %r7, %tid.x;
+    add.s32 %r8, %r6, %r7;  // calculates tid 
+    mov.u32 %r5, %r8;   // moves it ( unnecessarily )
+
+
+
+    cvt.u32.u64 %r9, %rd3;      // r9 = n 
+    setp.ge.u32 %p10, %r8, %r9; // p10 =tid >= n ? 
+    not.pred %p11, %p10;        // p11 = neg. p10
+    @%p11 bra br_if_label_0;    // if p11 true -> continue 
+    br_if_label_0:
+
+
+    mov.u32 %r12, 2;
+    shl.b32 %r13, %r5, %r12;      // left shift tid by 2 (equiv. to mul by 4) to calculate byte offset 
+    mov.u32 %r5, %r13;          
+    cvt.u64.u32 %rd14, %r13;
+    add.s64 %rd15, %rd2, %rd14;   // add byte offset to vector C
+    cvt.u64.u32 %rd16, %r5;
+    add.s64 %rd17, %rd1, %rd16;     // add byte offset to vector A
+    ld.global.u32 %r18, [%rd17];
+    cvt.u64.u32 %rd19, %r5;
+    add.s64 %rd20, %rd0, %rd19;
+    ld.global.u32 %r21, [%rd20];
+    add.s32 %r22, %r18, %r21;
+    st.global.u32 [%rd15], %r22;
+}
+

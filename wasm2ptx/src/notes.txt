@@ -1,0 +1,23 @@
+
+
+Branches PTX vs WASM 
+
+
+if (i < n)
+    j = j + 1;
+
+
+
+      setp.lt.s32  p, i, n;    // p = (i < n)
+@p    add.s32      j, j, 1;    // if i < n, add 1 to j
+
+
+
+For Conditional Branches Use Predicate to control flow of exec of branch
+
+True Conditional branch in PTX:
+
+      setp.lt.s32  p, i, n;    // compare i to n
+@!p   bra  L1;                 // if False, branch over
+      add.s32      j, j, 1;
+L1:  ....
