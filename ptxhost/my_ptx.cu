@@ -104,39 +104,6 @@ int main() {
     checkCudaError(cuMemcpyHtoD(d_A, h_A.data(), size), "Error copying h_A to device");
     checkCudaError(cuMemcpyHtoD(d_B, h_B.data(), size), "Error copying h_B to device");
 
-
-    std::vector<int> h_A_check(N, 0);
-    std::vector<int> h_B_check(N, 0);
-    std::vector<int> h_C_check(N, 0);
-
-    cuMemcpyDtoH(h_A_check.data(), d_A, size);
-    cuMemcpyDtoH(h_B_check.data(), d_B, size);
-    cuMemcpyDtoH(h_C_check.data(), d_C, size);
-
-    std::cout << "Device vector A (copied back):" << std::endl;
-    for (int i = 0; i < N; ++i) {
-        std::cout << h_A_check[i] << " ";
-        if ((i + 1) % 16 == 0) {
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << "Device vector B (copied back):" << std::endl;
-    for (int i = 0; i < N; ++i) {
-        std::cout << h_B_check[i] << " ";
-        if ((i + 1) % 16 == 0) {
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << "Device vector C (copied back):" << std::endl;
-    for (int i = 0; i < N; ++i) {
-        std::cout << h_C_check[i] << " ";
-        if ((i + 1) % 16 == 0) {
-            std::cout << std::endl;
-        }
-    }
-
     // Prepare kernel parameters: must match param0..param3 in PTX
     void* args[] = {
         &d_A,       // param0

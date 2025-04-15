@@ -1,12 +1,6 @@
 [package]
 name = "wasm2ptx"
-authors.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license.workspace = true
-repository.workspace = true
-rust-version.workspace = true
-version.workspace = true
+edition = "2021"
 
 [dependencies]
 wasmparser = "0.116.0"  

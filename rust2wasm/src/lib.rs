@@ -45,6 +45,33 @@ pub extern "C" fn vector_add_kernel(
 }
 
 
+
+#[no_mangle]
+pub extern "C" fn vector_add_loop_kernel(
+    thread_idx: ThreadIdx,
+    block_idx: BlockIdx,
+    block_dim: BlockDim,
+    a: *const i32,
+    b: *const i32, 
+    c: *mut i32,
+    n: usize,
+    
+
+) {
+    unsafe {
+        let mut i = (block_idx.x * block_dim.x + thread_idx.x) as usize;
+        while i < n {
+            unsafe {
+                *c.add(i) = *a.add(i) + *b.add(i);
+            }
+            i += (block_dim.x * block_dim.y * block_dim.z) as usize;
+        }
+    }
+}
+
+
+
+
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}

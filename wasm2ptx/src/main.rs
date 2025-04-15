@@ -4,11 +4,14 @@ mod stack;
 mod memory;
 mod ptx_module;
 mod kernel_detector;
+mod operators;
+mod utils;
 use wasmparser::{Parser, Payload, Operator, ExternalKind, TypeRef, ValType, CompositeType};
 use std::fs;
 use crate::ir::{WasmOperator, convert_wasm_operator};
 use crate::kernel_detector::detect_kernel;  
 use crate::ptx_module::PTXModule;
+
 
 fn main() {
     env_logger::init();
@@ -36,7 +39,7 @@ fn main() {
                 }
             }
             Payload::FunctionSection(reader) => {
-                for (i, func_type) in reader.into_iter().enumerate() {
+                for (_, func_type) in reader.into_iter().enumerate() {
                     if let Ok(type_idx) = func_type {
                         func_type_map.push(type_idx as usize);
                     }

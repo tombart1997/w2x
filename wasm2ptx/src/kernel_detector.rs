@@ -1,6 +1,5 @@
 
 
-use wasmparser::ValType;
 #[derive(Debug, Clone)]
 
 pub struct KernelInfo {

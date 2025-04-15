@@ -9,12 +9,12 @@ use crate::ptx_module::PTXInstruction;
 pub enum RegisterType {
     U32,
     U64, 
-    S32, 
-    S64,
     F32, 
     F64,
     I32,
     I64,
+    S64,
+    S32,
     Predicate,
     Special(SpecialRegister), 
 }

@@ -6,21 +6,17 @@ pub enum WasmOperator {
         reg: SpecialRegister,
         reg_type: RegisterType,
         local_index: u32,
-        adjusted_index: u32,
     },
     LocalGet { 
         local_index: u32, 
-        adjusted_index: u32,
         reg_type: RegisterType 
     },
     LocalSet { 
         local_index: u32, 
-        adjusted_index: u32,
         reg_type: RegisterType 
     },
     LocalTee { 
         local_index: u32, 
-        adjusted_index: u32,
         reg_type: RegisterType 
     },
     I32Add,
@@ -34,21 +30,20 @@ pub enum WasmOperator {
     I32Mul,
     I32GeU,
     I32Shl,
-    I32Store { offset: u32, reg_type: RegisterType },
-    I32Load { offset: u32, reg_type: RegisterType },
+    I32Store { reg_type: RegisterType },
+    I32Load { reg_type: RegisterType },
     BrIf { relative_depth: u32 },
-    End,
     Loop { block_id: usize },
+    End,
+    Return,
     Block { block_id: usize },
     Br { relative_depth: u32 },
 }
-
 
 fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<SpecialRegister> {
     if !is_kernel {
         return None;
     }
-
     match local_index as usize {
         idx if idx == 0 => Some(SpecialRegister::ThreadIdX),
         idx if idx == 1 => Some(SpecialRegister::ThreadIdY),
@@ -68,14 +63,12 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
     match op {
         Operator::LocalGet { local_index } => {
             let local_index = *local_index;
-            let adjusted_index = adjust_local_index(local_index, first_data_param, is_kernel);
             let reg_type = get_variable_type(local_index, all_variables);
         
             if is_kernel {
                 if let Some(special_reg) = map_local_to_special_register(local_index, is_kernel) {
                     return WasmOperator::SpecialRegister {
                         local_index: local_index,
-                        adjusted_index: adjusted_index,
                         reg: special_reg,
                         reg_type: RegisterType::Special(special_reg),
                     };
@@ -83,19 +76,16 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             }
             WasmOperator::LocalGet {
                 local_index,
-                adjusted_index,
                 reg_type,
             }
         }
         Operator::LocalSet { local_index } => WasmOperator::LocalSet {
             local_index: *local_index,
-            adjusted_index: adjust_local_index(*local_index, first_data_param, is_kernel),
             reg_type: get_variable_type(*local_index, all_variables)
         },
         
         Operator::LocalTee { local_index } => WasmOperator::LocalTee {
             local_index: *local_index,
-            adjusted_index: adjust_local_index(*local_index, first_data_param, is_kernel),
             reg_type: get_variable_type(*local_index, all_variables)
         },
         // Integer Operations
@@ -113,20 +103,18 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
         Operator::I32GeU => WasmOperator::I32GeU,
         Operator::I32Shl => WasmOperator::I32Shl,
         Operator::I32Ne => WasmOperator::I32Ne,   
-        Operator::I32Store { memarg } => WasmOperator::I32Store { 
-            offset: memarg.offset as u32, 
+        Operator::I32Store => WasmOperator::I32Store { 
             reg_type: RegisterType::U32 
         },
-        Operator::I32Load { memarg } => WasmOperator::I32Load { 
-            offset: memarg.offset as u32, 
+        Operator::I32Load => WasmOperator::I32Load { 
             reg_type: RegisterType::U32 
         },
         // Control Flow
         Operator::BrIf { relative_depth } => WasmOperator::BrIf { relative_depth: *relative_depth },
         Operator::Loop { .. } => WasmOperator::Loop { block_id: 0 },
         Operator::End => WasmOperator::End,
-
         // Block Handling
+        Operator::Return => WasmOperator::Return,
         Operator::Block { .. } => {
             static mut BLOCK_COUNTER: usize = 0;
             unsafe {
@@ -135,16 +123,8 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             }
         },
         Operator::Br { relative_depth } => WasmOperator::Br { relative_depth: *relative_depth },
-
         _ => unimplemented!("Unhandled operator conversion: {:?}", op),
     }
-}
-
-pub fn adjust_local_index(local_index: u32, first_data_param: usize, is_kernel: bool) -> u32 {
-    if is_kernel && local_index >= first_data_param as u32 {
-        return local_index - first_data_param as u32;
-    }
-    local_index
 }
 
 
