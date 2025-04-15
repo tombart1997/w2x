@@ -30,6 +30,7 @@ pub fn handle_local_set(
                 destination: memory_manager.format_register(bridge_reg, *reg_type),
                 source: memory_manager.format_register(val, val_type),
             });
+            stack.push(val, val_type);
         }
         IndexType::KernelParameter(idx) => {
             if let Some((param_reg, param_type)) = memory_manager.get_register(IndexType::KernelParameter(idx)) {
@@ -43,32 +44,37 @@ pub fn handle_local_set(
                     destination: memory_manager.format_register(param_reg, param_type),
                     source: memory_manager.format_register(formatted_val, new_type),
                 });
+                stack.push(formatted_val, new_type);
             } else {
                 panic!("LocalSet failed to retrieve kernel parameter register for index: {}", idx);
             }
         }
         IndexType::LocalVariable(idx) => {
-            let reg = if let Some((raw_reg, reg_type)) =
+            // Always assign/register the local variable to ensure it's tracked
+            let (raw_reg, reg_type) = if let Some((raw_reg, reg_type)) =
                 memory_manager.get_register(IndexType::LocalVariable(idx))
             {
-                memory_manager.format_register(raw_reg, reg_type)
+                (raw_reg, reg_type)
             } else if let Some((raw_reg, reg_type)) = memory_manager.assign_register(IndexType::LocalVariable(idx), *reg_type) {
-                memory_manager.format_register(raw_reg, reg_type)
+                (raw_reg, reg_type)
             } else {
                 panic!("No registers available for LocalSet! Index: {}", idx);
             };
+            println!("LocalSet: Register {} of type {:?} for index {}", raw_reg, reg_type, idx);
 
-            let (formatted_val, new_type) = if val_type != *reg_type {
-                convert_register(entry_point, memory_manager, val, val_type, *reg_type)
+            let (formatted_val, new_type) = if val_type != reg_type {
+                convert_register(entry_point, memory_manager, val, val_type, reg_type)
             } else {
                 (val, val_type)
             };
 
             entry_point.add_instruction(PTXInstruction::Mov {
                 data_type: new_type.to_ptx_type().to_string(),
-                destination: reg,
+                destination: memory_manager.format_register(raw_reg, reg_type),
                 source: memory_manager.format_register(formatted_val, new_type),
             });
+            // Optionally, update the stack if you want to keep the value available
+            stack.push(formatted_val, new_type);
         }
     }
 }

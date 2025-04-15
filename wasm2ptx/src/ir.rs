@@ -38,6 +38,7 @@ pub enum WasmOperator {
     Return,
     Block { block_id: usize },
     Br { relative_depth: u32 },
+    If { block_id: usize },
 }
 
 fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<SpecialRegister> {
@@ -103,10 +104,10 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
         Operator::I32GeU => WasmOperator::I32GeU,
         Operator::I32Shl => WasmOperator::I32Shl,
         Operator::I32Ne => WasmOperator::I32Ne,   
-        Operator::I32Store => WasmOperator::I32Store { 
+        Operator::I32Store { memarg: _ } => WasmOperator::I32Store { 
             reg_type: RegisterType::U32 
         },
-        Operator::I32Load => WasmOperator::I32Load { 
+        Operator::I32Load { memarg: _ } => WasmOperator::I32Load { 
             reg_type: RegisterType::U32 
         },
         // Control Flow

@@ -153,6 +153,8 @@ pub enum PTXInstruction {
     Label {
         name: String,
     },
+    Return {
+    },
     Other(String), // For instructions not explicitly covered
 }
 
@@ -208,6 +210,7 @@ impl ToString for PTXInstruction {
             PTXInstruction::ParamLoad { param_index, destination } => {
                 format!("ld.param.u64 {}, [param{}];", destination, param_index)
             }
+            PTXInstruction::Return {} => "ret;".to_string(),
             PTXInstruction::Label { name } => format!("{}:", name),
             PTXInstruction::Other(instruction) => instruction.clone(),
         }

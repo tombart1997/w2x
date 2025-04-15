@@ -6,7 +6,7 @@ use crate::memory::{IndexType, MemoryManager, RegisterType};
 use crate::stack::Stack;
 
 
-pub fn handle_block(
+pub fn handle_if(
     block_id: usize,
     kernel_info: &crate::kernel_detector::KernelInfo,
     memory_manager:  &mut MemoryManager,
@@ -19,14 +19,16 @@ pub fn handle_block(
     ctx: &mut LabelContext,
     current_idx: usize,
 ) { 
-    let start_label = format!("{}_{}_start", "block", block_id);
-    let end_label = format!("{}_{}_end", "block", block_id);
+    let start_label = format!("{}_{}_start", "if", block_id);
+    let end_label = format!("{}_{}_end", "if", block_id);
     ctx.push(LabelFrame { 
-        kind: LabelKind::Block, 
+        kind: LabelKind::If, 
         start: start_label.clone(), 
         end: end_label.clone(),
     });
     entry_point.add_instruction(PTXInstruction::Label { name: start_label.clone() });
+
+    // Translate the body of the block
     let (nested, end_idx) = get_nested_instructions(ops, current_idx + 1);
     translate_ops_into_entry_point(
         &nested,
@@ -39,6 +41,7 @@ pub fn handle_block(
         ptx_module,
         ctx,
     );
+    
     entry_point.add_instruction(PTXInstruction::Label { name: end_label.clone() });
     ctx.pop();
 }

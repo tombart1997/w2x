@@ -3,6 +3,7 @@ mod ir;
 mod stack;
 mod memory;
 mod ptx_module;
+mod label_context;
 mod kernel_detector;
 mod operators;
 mod utils;
@@ -11,7 +12,7 @@ use std::fs;
 use crate::ir::{WasmOperator, convert_wasm_operator};
 use crate::kernel_detector::detect_kernel;  
 use crate::ptx_module::PTXModule;
-
+use crate::label_context::{LabelContext, LabelKind, LabelFrame};
 
 fn main() {
     env_logger::init();
@@ -72,6 +73,7 @@ fn main() {
         }
     }
     for (export_idx, kernel_name) in exported_funcs {
+        println!("Exported function: {} with index {}", kernel_name, export_idx);
         let body_idx = export_idx - func_index_offset;
         let ops = &func_bodies[body_idx as usize];
         let (params, locals) = extract_all_variables(

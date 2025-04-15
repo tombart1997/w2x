@@ -4,7 +4,7 @@ use super::stack::Stack;
 use crate::memory::RegisterType;
 use crate::ptx_module::PTXModule;
 use super::ptx_module::{PTXEntryPoint, PTXParameter, PTXInstruction};
-use crate::label_context::{LabelKind, LabelFrame};
+use super::label_context::{LabelContext, LabelKind, LabelFrame};
 
 
  
@@ -18,6 +18,7 @@ pub fn translate_to_ptx(
     let mut stack = Stack::new();
     let mut memory_manager = MemoryManager::new(255);
     let mut parameters = Vec::new();
+    let mut label_ctx = LabelContext::new();
 
     // Add kernel parameters
     for i in kernel_info.first_data_param..kernel_info.first_data_param + 4 {
@@ -25,6 +26,19 @@ pub fn translate_to_ptx(
     }
 
     let mut entry_point = PTXEntryPoint::new(kernel_info.name.clone(), parameters);
+
+    // --- FIX: Push function-level implicit block ---
+    let func_start = format!("{}_start", kernel_info.name);
+    let func_end = format!("{}_end", kernel_info.name);
+    label_ctx.push(LabelFrame {
+        kind: LabelKind::Block,
+        start: func_start.clone(),
+        end: func_end.clone(),
+    });
+    entry_point.add_instruction(PTXInstruction::Label { name: func_start });
+
+
+
 
     // Load kernel parameters into registers
     if kernel_info.is_kernel {
@@ -41,11 +55,15 @@ pub fn translate_to_ptx(
             }
         }
     }
+    println!("Ops: {:?}", ops);
     // Translate each operator
-    for op in ops {
-        translate_to_ptx_instruction(op, kernel_info, &mut memory_manager, &mut stack, &mut entry_point, ops, param_count, local_count, ptx_module);
+    for (current_idx, op) in ops.iter().enumerate() {
+        translate_to_ptx_instruction(op, kernel_info, &mut memory_manager, &mut stack, &mut entry_point, ops, param_count, local_count, ptx_module, &mut label_ctx, current_idx,);
     }
 
+
+    entry_point.add_instruction(PTXInstruction::Label { name: func_end });
+    label_ctx.pop();
     // Add register declarations
     let register_declarations = memory_manager.generate_register_declarations();
     for declaration in register_declarations {
@@ -64,7 +82,9 @@ fn translate_to_ptx_instruction(
     ops: &[WasmOperator],           
     param_count: usize,              
     local_count: usize,      
-    ptx_module: &mut PTXModule      
+    ptx_module: &mut PTXModule,
+    label_ctx: &mut LabelContext,
+    current_idx: usize,
 ) {
     match op {
         WasmOperator::LocalGet { local_index, reg_type } => {
@@ -161,6 +181,7 @@ fn translate_to_ptx_instruction(
             crate::operators::loops::br::handle_br(
                 *relative_depth,
                 entry_point,
+                label_ctx,
             );
         }
         WasmOperator::BrIf { relative_depth } => {
@@ -169,28 +190,52 @@ fn translate_to_ptx_instruction(
                 memory_manager,
                 stack,
                 entry_point,
+                label_ctx,
             );
         }
         WasmOperator::Loop { block_id } => {
             crate::operators::loops::r#loop::handle_loop(
                 *block_id,
                 kernel_info,
+                memory_manager,
+                stack,
                 entry_point,
                 ops,               
                 param_count,       
                 local_count,      
-                ptx_module,        
+                ptx_module,      
+                label_ctx,  
+                current_idx,
             );
         }
         WasmOperator::Block { block_id } => {
             crate::operators::loops::block::handle_block(
                 *block_id,
                 kernel_info,
+                memory_manager,
+                stack,
                 entry_point,
                 ops,               
-                param_count,      
-                local_count,       
-                ptx_module,        
+                param_count,       
+                local_count,      
+                ptx_module,      
+                label_ctx,  
+                current_idx,
+            );
+        }
+        WasmOperator::If { block_id } => {
+            crate::operators::loops::r#if::handle_if(
+                *block_id,
+                kernel_info,
+                memory_manager,
+                stack,
+                entry_point,
+                ops,               
+                param_count,       
+                local_count,      
+                ptx_module,      
+                label_ctx,  
+                current_idx,
             );
         }
         WasmOperator::SpecialRegister { reg, reg_type, local_index } => {
@@ -223,39 +268,62 @@ fn translate_to_ptx_instruction(
 
 
 pub fn get_nested_instructions<'a>(
-    block_id: usize,
     ops: &'a [WasmOperator],
-) -> Vec<WasmOperator> { 
+    start_idx: usize,
+) -> (Vec<WasmOperator>, usize) {
     let mut nested_instructions = Vec::new();
-    let mut depth = 0;
-    let mut inside_target_block = false;
+    let mut depth = 1; // We start after the block/loop/if
+    let mut idx = start_idx;
 
-    for op in ops {
-        match op {
-            WasmOperator::Block { block_id: nested_block_id }
-            | WasmOperator::Loop { block_id: nested_block_id } => {
-                if *nested_block_id == block_id && depth == 0 {
-                    inside_target_block = true;
-                }
-                if inside_target_block {
-                    depth += 1;
-                }
+    while idx < ops.len() {
+        match &ops[idx] {
+            WasmOperator::Block { .. }
+            | WasmOperator::Loop { .. }
+            | WasmOperator::If { .. } => {
+                depth += 1;
             }
             WasmOperator::End => {
-                if inside_target_block {
-                    depth -= 1;
-                    if depth == 0 {
-                        inside_target_block = false;
-                        break;
-                    }
+                depth -= 1;
+                if depth == 0 {
+                    // End of this block/loop/if
+                    return (nested_instructions, idx);
                 }
             }
-            _ => {
-                if inside_target_block {
-                    nested_instructions.push(op.clone()); 
-                }
-            }
+            _ => {}
         }
+        if depth > 0 {
+            nested_instructions.push(ops[idx].clone());
+        }
+        idx += 1;
     }
-    nested_instructions
+    (nested_instructions, idx)
+}
+
+
+pub fn translate_ops_into_entry_point(
+    ops: &[WasmOperator],
+    kernel_info: &crate::kernel_detector::KernelInfo,
+    memory_manager: &mut MemoryManager,
+    stack: &mut Stack,
+    entry_point: &mut PTXEntryPoint,
+    param_count: usize,
+    local_count: usize,
+    ptx_module: &mut PTXModule,
+    label_ctx: &mut LabelContext,
+) {
+    for (current_idx, op) in ops.iter().enumerate() {
+        translate_to_ptx_instruction(
+            op,
+            kernel_info,
+            memory_manager,
+            stack,
+            entry_point,
+            ops,
+            param_count,
+            local_count,
+            ptx_module,
+            label_ctx,
+            current_idx,
+        );
+    }
 }

@@ -151,12 +151,9 @@ impl MemoryManager {
     pub fn get_register(&self, index_type: IndexType) -> Option<(u32, RegisterType)> {
         match index_type {
             IndexType::SpecialRegister(idx) => {
-                // Check if a bridge register exists for the special register
                 if let Some(bridge_reg) = self.get_bridge_register(idx) {
-                    return Some((bridge_reg, RegisterType::U32)); // Use the bridge register
+                    return Some((bridge_reg, RegisterType::U32));
                 }
-    
-                // Otherwise, return the special register itself (read-only)
                 self.get_special_register_by_index(idx)
                     .and_then(|special_reg| {
                         self.special_registers.get(&special_reg)?;
@@ -222,6 +219,7 @@ impl MemoryManager {
             IndexType::LocalVariable(idx) => {
                 let reg = self.free_registers.pop_front()?;
                 self.local_registers.insert(idx as u32, reg_type);
+                self.register_types.insert(reg, reg_type);
                 Some((reg, reg_type))
             }
         }
