@@ -17,11 +17,7 @@ export function as C function and make sure function name ends with _kernel
 
 `cargo build --release --target wasm32-unknown-unknown --target-dir ./target`
 
-**Step 3  Create .Wasm file for Target Environment (wasm32-unknown-unknown):**
-
-`cargo build --release --target wasm32-unknown-unknown --target-dir ./target`
-
-**Step 4  Convert .WASM file .WAT file:**          
+**Step 3  Convert .WASM file .WAT file:**          
 
 `wasm2wat ./target/wasm32-unknown-unknown/release/*yourfile.wasm* -o ./target/wasm32-unknown-unknown/release/*yourfile.wat*`
 
