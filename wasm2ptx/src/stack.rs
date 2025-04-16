@@ -15,6 +15,7 @@ impl Stack {
     }
 
     pub fn push(&mut self, reg: u32, reg_type: RegisterType) {
+        println!("Stack push: Register {} of type {:?}", reg, reg_type);
         self.stack.push_front((reg, reg_type));
     }
 

@@ -20,14 +20,11 @@ pub fn translate_to_ptx(
     let mut parameters = Vec::new();
     let mut label_ctx = LabelContext::new();
 
-    // Add kernel parameters
     for i in kernel_info.first_data_param..kernel_info.first_data_param + 4 {
         parameters.push(PTXParameter::new(format!("param{}", i), ".u64".to_string()));
     }
 
     let mut entry_point = PTXEntryPoint::new(kernel_info.name.clone(), parameters);
-
-    // --- FIX: Push function-level implicit block ---
     let func_start = format!("{}_start", kernel_info.name);
     let func_end = format!("{}_end", kernel_info.name);
     label_ctx.push(LabelFrame {
@@ -36,11 +33,6 @@ pub fn translate_to_ptx(
         end: func_end.clone(),
     });
     entry_point.add_instruction(PTXInstruction::Label { name: func_start });
-
-
-
-
-    // Load kernel parameters into registers
     if kernel_info.is_kernel {
         for i in 9..13 {
             if let Some((result_reg, reg_type)) = memory_manager.assign_parameter_register(RegisterType::U64) {
@@ -55,13 +47,48 @@ pub fn translate_to_ptx(
             }
         }
     }
-    println!("Ops: {:?}", ops);
-    // Translate each operator
-    for (current_idx, op) in ops.iter().enumerate() {
-        translate_to_ptx_instruction(op, kernel_info, &mut memory_manager, &mut stack, &mut entry_point, ops, param_count, local_count, ptx_module, &mut label_ctx, current_idx,);
+    let mut idx = 0;
+    while idx < ops.len() {
+        let op = &ops[idx];
+        match op {
+            WasmOperator::Block { .. }
+            | WasmOperator::Loop { .. }
+            | WasmOperator::If { .. } => {
+                // Recursively translate the block/loop/if
+                let (_, end_idx) = get_nested_instructions(ops, idx + 1);
+                translate_to_ptx_instruction(
+                    op,
+                    kernel_info,
+                    &mut memory_manager,
+                    &mut stack,
+                    &mut entry_point,
+                    ops,
+                    param_count,
+                    local_count,
+                    ptx_module,
+                    &mut label_ctx,
+                    idx,
+                );
+                idx = end_idx + 1; // Skip to after the matching End
+            }
+            _ => {
+                translate_to_ptx_instruction(
+                    op,
+                    kernel_info,
+                    &mut memory_manager,
+                    &mut stack,
+                    &mut entry_point,
+                    ops,
+                    param_count,
+                    local_count,
+                    ptx_module,
+                    &mut label_ctx,
+                    idx,
+                );
+                idx += 1;
+            }
+        }
     }
-
-
     entry_point.add_instruction(PTXInstruction::Label { name: func_end });
     label_ctx.pop();
     // Add register declarations
@@ -272,7 +299,7 @@ pub fn get_nested_instructions<'a>(
     start_idx: usize,
 ) -> (Vec<WasmOperator>, usize) {
     let mut nested_instructions = Vec::new();
-    let mut depth = 1; // We start after the block/loop/if
+    let mut depth = 1; 
     let mut idx = start_idx;
 
     while idx < ops.len() {
@@ -285,7 +312,6 @@ pub fn get_nested_instructions<'a>(
             WasmOperator::End => {
                 depth -= 1;
                 if depth == 0 {
-                    // End of this block/loop/if
                     return (nested_instructions, idx);
                 }
             }
@@ -311,19 +337,45 @@ pub fn translate_ops_into_entry_point(
     ptx_module: &mut PTXModule,
     label_ctx: &mut LabelContext,
 ) {
-    for (current_idx, op) in ops.iter().enumerate() {
-        translate_to_ptx_instruction(
-            op,
-            kernel_info,
-            memory_manager,
-            stack,
-            entry_point,
-            ops,
-            param_count,
-            local_count,
-            ptx_module,
-            label_ctx,
-            current_idx,
-        );
+    let mut idx = 0;
+    while idx < ops.len() {
+        let op = &ops[idx];
+        match op {
+            WasmOperator::Block { .. }
+            | WasmOperator::Loop { .. }
+            | WasmOperator::If { .. } => {
+                let (_, end_idx) = get_nested_instructions(ops, idx + 1);
+                translate_to_ptx_instruction(
+                    op,
+                    kernel_info,
+                    memory_manager,
+                    stack,
+                    entry_point,
+                    ops,
+                    param_count,
+                    local_count,
+                    ptx_module,
+                    label_ctx,
+                    idx,
+                );
+                idx = end_idx + 1;
+            }
+            _ => {
+                translate_to_ptx_instruction(
+                    op,
+                    kernel_info,
+                    memory_manager,
+                    stack,
+                    entry_point,
+                    ops,
+                    param_count,
+                    local_count,
+                    ptx_module,
+                    label_ctx,
+                    idx,
+                );
+                idx += 1;
+            }
+        }
     }
 }

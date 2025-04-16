@@ -13,28 +13,20 @@ pub fn handle_i32_ltu(
 ) {
     let (right, right_type) = stack.pop().expect("Stack underflow during I32LtU (right)");
     let (left, left_type) = stack.pop().expect("Stack underflow during I32LtU (left)");
-
-    // Convert both operands to F32 for unordered comparison
-    let (right_f, _) = convert_register(entry_point, memory_manager, right, right_type, RegisterType::F32);
-    let (left_f, _) = convert_register(entry_point, memory_manager, left, left_type, RegisterType::F32);
-
-    // Allocate a predicate register for the result
+    let (right_f, _) = convert_register(entry_point, memory_manager, right, right_type, RegisterType::U32);
+    let (left_f, _) = convert_register(entry_point, memory_manager, left, left_type, RegisterType::U32);
     let (pred_reg, pred_type) = memory_manager
         .new_predicate_register()
         .expect("Failed to allocate predicate register for I32LtU");
     let formatted_pred = memory_manager.format_register(pred_reg, pred_type);
-    let formatted_left = memory_manager.format_register(left_f, RegisterType::F32);
-    let formatted_right = memory_manager.format_register(right_f, RegisterType::F32);
-
-    // PTX: setp.ltu.f32 %pX, %left, %right;
+    let formatted_left = memory_manager.format_register(left_f, RegisterType::U32);
+    let formatted_right = memory_manager.format_register(right_f, RegisterType::U32);
     entry_point.add_instruction(PTXInstruction::Setp {
         predicate: formatted_pred.clone(),
-        data_type: ".f32".to_string(),
+        data_type: ".u32".to_string(),
         operand1: formatted_left,
         operand2: formatted_right,
-        comparison: ".ltu".to_string(),
+        comparison: ".lt".to_string(),
     });
-
-    // Push the predicate result onto the stack
     stack.push(pred_reg, RegisterType::Predicate);
 }
