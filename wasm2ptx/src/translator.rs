@@ -2,6 +2,7 @@ use super::ir::WasmOperator;
 use super::memory::MemoryManager;
 use super::stack::Stack;
 use crate::memory::RegisterType;
+use crate::operators::local;
 use crate::ptx_module::PTXModule;
 use super::ptx_module::{PTXEntryPoint, PTXParameter, PTXInstruction};
 use super::label_context::{LabelContext, LabelKind, LabelFrame};
@@ -19,8 +20,7 @@ pub fn translate_to_ptx(
     let mut memory_manager = MemoryManager::new(255);
     let mut parameters = Vec::new();
     let mut label_ctx = LabelContext::new();
-
-    for i in kernel_info.first_data_param..kernel_info.first_data_param + 4 {
+    for i in kernel_info.first_data_param..(param_count) {
         parameters.push(PTXParameter::new(format!("param{}", i), ".u64".to_string()));
     }
 
@@ -34,14 +34,14 @@ pub fn translate_to_ptx(
     });
     entry_point.add_instruction(PTXInstruction::Label { name: func_start });
     if kernel_info.is_kernel {
-        for i in 9..13 {
-            if let Some((result_reg, reg_type)) = memory_manager.assign_parameter_register(RegisterType::U64) {
-                let formatted_result = memory_manager.format_register(result_reg, reg_type);
+        for i in kernel_info.first_data_param..(param_count) {
+            if let Some((result_reg, reg_type)) = memory_manager.assign_parameter_register(  i, RegisterType::U64) {
+                let formatted_result = memory_manager.format_register(i as u32, reg_type);
                 entry_point.add_instruction(PTXInstruction::ParamLoad {
-                    param_index: i as usize,
+                    param_index:  i as usize,
                     destination: formatted_result.clone(),
                 });
-                stack.push(result_reg, reg_type);
+                //stack.push(result_reg, reg_type);
             } else {
                 panic!("Failed to allocate register for kernel parameter param{}", i);
             }
@@ -54,7 +54,6 @@ pub fn translate_to_ptx(
             WasmOperator::Block { .. }
             | WasmOperator::Loop { .. }
             | WasmOperator::If { .. } => {
-                // Recursively translate the block/loop/if
                 let (_, end_idx) = get_nested_instructions(ops, idx + 1);
                 translate_to_ptx_instruction(
                     op,
@@ -69,7 +68,7 @@ pub fn translate_to_ptx(
                     &mut label_ctx,
                     idx,
                 );
-                idx = end_idx + 1; // Skip to after the matching End
+                idx = end_idx + 1;
             }
             _ => {
                 translate_to_ptx_instruction(
@@ -91,7 +90,6 @@ pub fn translate_to_ptx(
     }
     entry_point.add_instruction(PTXInstruction::Label { name: func_end });
     label_ctx.pop();
-    // Add register declarations
     let register_declarations = memory_manager.generate_register_declarations();
     for declaration in register_declarations {
         entry_point.add_register_declaration(declaration);
@@ -118,6 +116,8 @@ fn translate_to_ptx_instruction(
             crate::operators::local::get::handle_local_get(
                 *local_index,
                 kernel_info,
+                param_count,
+                local_count,
                 memory_manager,
                 stack,
                 entry_point,
@@ -128,6 +128,8 @@ fn translate_to_ptx_instruction(
             crate::operators::local::set::handle_local_set(
                 *local_index,
                 kernel_info,
+                param_count,
+                local_count,
                 memory_manager,
                 stack,
                 entry_point,
@@ -138,6 +140,8 @@ fn translate_to_ptx_instruction(
             crate::operators::local::tee::handle_local_tee(
                 *local_index,
                 kernel_info,
+                param_count,
+                local_count,
                 memory_manager,
                 stack,
                 entry_point,

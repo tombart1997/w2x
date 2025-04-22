@@ -9,7 +9,9 @@ pub fn handle_i32_const(
     value: &i32,
     reg_type: &RegisterType,
 ) { 
+    println!("Handling I32Const with value: {} and reg type {:?}", value, reg_type);
     if let Some((result_reg, reg_type)) = memory_manager.new_register(*reg_type) {
+        println!("Allocated new register: {:?}, with type {:?}", result_reg, reg_type);
         let formatted_result = memory_manager.format_register(result_reg, reg_type);
         entry_point.add_instruction(PTXInstruction::Mov {
             data_type: if value < &0 { ".s32".to_string() } else { ".u32".to_string() },
@@ -17,6 +19,7 @@ pub fn handle_i32_const(
             source: value.to_string(),
         });
         stack.push(result_reg, reg_type);
+        println!("Stack push operation with register: {:?}, type: {:?}", result_reg, reg_type);
     } else {
         panic!("Failed to allocate a new register for I32Const operation");
     }

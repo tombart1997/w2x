@@ -27,8 +27,6 @@ pub fn handle_if(
         end: end_label.clone(),
     });
     entry_point.add_instruction(PTXInstruction::Label { name: start_label.clone() });
-
-    // Translate the body of the block
     let (nested, end_idx) = get_nested_instructions(ops, current_idx + 1);
     translate_ops_into_entry_point(
         &nested,

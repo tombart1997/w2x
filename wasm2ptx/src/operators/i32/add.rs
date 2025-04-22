@@ -19,7 +19,9 @@ pub fn handle_i32_add(
         }
     } else {
         (right, right_type)
-    };            
+    };          
+    println!("Left: {:?}, with type {:?}", left, left_type);
+
     let formatted_left = if requires_u64 {
         if left_type != RegisterType::U64 {
             convert_register(entry_point, memory_manager, left, left_type, RegisterType::U64)
@@ -47,5 +49,10 @@ pub fn handle_i32_add(
         operand1: memory_manager.format_register(formatted_left.0, formatted_left.1),
         operand2: memory_manager.format_register(formatted_right.0, formatted_right.1),
     });
+    println!("PTXInstruction::Add with destination: {:?}, operand1: {:?}, operand2: {:?}", 
+        memory_manager.format_register(formatted_register, formatted_type), 
+        memory_manager.format_register(formatted_left.0, formatted_left.1), 
+        memory_manager.format_register(formatted_right.0, formatted_right.1)
+    );
     stack.push(formatted_register, formatted_type);
 }

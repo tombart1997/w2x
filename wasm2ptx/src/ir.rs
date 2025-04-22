@@ -59,7 +59,6 @@ fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<Sp
     }
 }
 
-/// **Convert a `wasmparser::Operator` into `WasmOperator` while preserving register types.**
 pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], first_data_param: usize, is_kernel: bool) -> WasmOperator {
     match op {
         Operator::LocalGet { local_index } => {
@@ -89,7 +88,6 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             local_index: *local_index,
             reg_type: get_variable_type(*local_index, all_variables)
         },
-        // Integer Operations
         Operator::I32Const { value } => WasmOperator::I32Const { 
             value: *value, 
             reg_type: RegisterType::U32 
@@ -110,11 +108,9 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
         Operator::I32Load { memarg: _ } => WasmOperator::I32Load { 
             reg_type: RegisterType::U32 
         },
-        // Control Flow
         Operator::BrIf { relative_depth } => WasmOperator::BrIf { relative_depth: *relative_depth },
         Operator::Loop { .. } => WasmOperator::Loop { block_id: 0 },
         Operator::End => WasmOperator::End,
-        // Block Handling
         Operator::Return => WasmOperator::Return,
         Operator::Block { .. } => {
             static mut BLOCK_COUNTER: usize = 0;
@@ -129,7 +125,6 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
 }
 
 
-/// **Determines the correct PTX register type based on the WebAssembly function's local variables.**
 pub fn get_variable_type(local_index: u32, all_variables: &[wasmparser::ValType]) -> RegisterType {
     let val_type = all_variables
         .get(local_index as usize)

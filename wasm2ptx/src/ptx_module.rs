@@ -6,7 +6,6 @@ pub struct PTXModule {
 }
 
 impl PTXModule {
-    // Create a new PTXModule with version and target
     pub fn new(version: String, target: String) -> Self {
         PTXModule {
             version,
@@ -15,12 +14,10 @@ impl PTXModule {
         }
     }
 
-    // Add a kernel entry point
     pub fn add_entry_point(&mut self, entry_point: PTXEntryPoint) {
         self.entry_points.push(entry_point);
     }
 
-    // Generate the complete PTX code as a string
     pub fn generate_ptx_string(&self) -> String {
         let mut ptx_code = String::new();
         ptx_code.push_str(&self.version);
@@ -38,13 +35,12 @@ impl PTXModule {
 #[derive(Debug, Default)]
 pub struct PTXEntryPoint {
     name: String,
-    parameters: Vec<PTXParameter>, // Kernel parameters
-    register_declarations: Vec<PTXInstruction>, // Register declarations
-    body: Vec<PTXInstruction>,     // PTX instructions
+    parameters: Vec<PTXParameter>, 
+    register_declarations: Vec<PTXInstruction>, 
+    body: Vec<PTXInstruction>,    
 }
 
 impl PTXEntryPoint {
-    // Create a new PTX entry point
     pub fn new(name: String, parameters: Vec<PTXParameter>) -> Self {
         PTXEntryPoint {
             name,
@@ -54,19 +50,16 @@ impl PTXEntryPoint {
         }
     }
 
-    // Add an instruction to the entry point
     pub fn add_instruction(&mut self, instruction: PTXInstruction) {
         self.body.push(instruction);
     }
 
-    // Add a register declaration
     pub fn add_register_declaration(&mut self, declaration: PTXInstruction) {
         self.register_declarations.push(declaration);
     }
 }
 
 impl ToString for PTXEntryPoint {
-    // Generate the PTX string for the entry point
     fn to_string(&self) -> String {
         let mut result = format!(".visible .entry {}(\n", self.name);
         for (i, param) in self.parameters.iter().enumerate() {
@@ -76,11 +69,9 @@ impl ToString for PTXEntryPoint {
             result.push_str(&format!("    .param {} {}", param.data_type, param.name));
         }
         result.push_str("\n) {\n");
-        // Add register declarations
         for declaration in &self.register_declarations {
             result.push_str(&format!("    {}\n", declaration.to_string()));
         }
-        // Add instructions
         for instruction in &self.body {
             result.push_str(&format!("    {}\n", instruction.to_string()));
         }
@@ -93,11 +84,10 @@ impl ToString for PTXEntryPoint {
 #[derive(Debug, Clone)]
 pub struct PTXParameter {
     name: String,
-    data_type: String, // e.g., ".u64", ".f32"
+    data_type: String, 
 }
 
 impl PTXParameter {
-    /// Create a new PTX parameter
     pub fn new(name: String, data_type: String) -> Self {
         PTXParameter { name, data_type }
     }
@@ -155,7 +145,7 @@ pub enum PTXInstruction {
     },
     Return {
     },
-    Other(String), // For instructions not explicitly covered
+    Other(String),
 }
 
 impl ToString for PTXInstruction {

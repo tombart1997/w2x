@@ -13,13 +13,8 @@ pub fn convert_register(
         return (source, source_type);
     }
     if let RegisterType::Special(_) = source_type {
-        println!(
-            "convert_register: Bypassing conversion for special register {:?} to {:?}",
-            source_type, target_type
-        );
         return (source, source_type);
     }
-    // Allocate a new register for the conversion result
     let (result_reg, _) = memory_manager
         .new_register(target_type)
         .expect("Failed to allocate register for conversion");

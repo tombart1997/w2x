@@ -124,26 +124,20 @@ impl MemoryManager {
             RegisterType::F32 => "%f",
             RegisterType::F64 => "%fd",
             RegisterType::Predicate => "%p",
-            RegisterType::Special(special_reg) => return self.get_special_register_name(special_reg).unwrap_or_else(|| reg.to_string()), // Handle special registers
+            RegisterType::Special(special_reg) => return self.get_special_register_name(special_reg).unwrap_or_else(|| reg.to_string()), 
         };
-    
         format!("{}{}", prefix, reg)
     }
 
-    // Wasm tends to overwrite parameters (local.tee, local.set), so we need to create a bridge register for them
     pub fn get_or_create_bridge_register(&mut self, special_index: usize, reg_type: RegisterType) -> u32 {
-        // Check if a bridge register already exists
         if let Some(&bridge_reg) = self.bridge_registers.get(&special_index) {
             return bridge_reg;
         }
-        // Allocate a new bridge register
         let (bridge_reg, _) = self.new_register(reg_type).expect("Failed to allocate bridge register");
-        // Store the bridge register in the hashmap
         self.bridge_registers.insert(special_index, bridge_reg);
         bridge_reg
     }
 
-    // Get the bridge register for a special register (if it exists)
     pub fn get_bridge_register(&self, special_index: usize) -> Option<u32> {
         self.bridge_registers.get(&special_index).cloned()
     }
@@ -161,8 +155,10 @@ impl MemoryManager {
                     })
             }
             IndexType::KernelParameter(idx) => {
-                self.parameter_registers.get(&((idx - 9) as u32)).map(|reg_type| {
-                    ((idx - 9) as u32, *reg_type)
+                println!("get_register: {} is a kernel parameter", idx);
+                println!("get_register: parameter_registers: {:?}", self.parameter_registers);
+                self.parameter_registers.get(&((idx) as u32)).map(|reg_type| {
+                    ((idx) as u32, *reg_type)
                 })
             }
             IndexType::LocalVariable(idx) => {
@@ -174,10 +170,16 @@ impl MemoryManager {
     }
     
 
-    pub fn assign_parameter_register(&mut self, reg_type: RegisterType) -> Option<(u32, RegisterType)> {
-        let reg = self.free_registers.pop_front()?;
-        self.register_types.insert(reg, reg_type); // Track the register type
-        self.parameter_registers.insert(reg, reg_type); // Map the parameter index to the register type
+    pub fn assign_parameter_register(&mut self, param_idx: usize, reg_type: RegisterType) -> Option<(u32, RegisterType)> {
+        // Try to use param_idx as the register number for the parameter
+        let reg = if let Some(pos) = self.free_registers.iter().position(|&r| r == param_idx as u32) {
+            self.free_registers.remove(pos).unwrap()
+        } else {
+            // Fallback: just pop the next available register
+            self.free_registers.pop_front()?
+        };
+        self.register_types.insert(reg, reg_type);
+        self.parameter_registers.insert(param_idx as u32, reg_type);
         Some((reg, reg_type))
     }
 
@@ -188,7 +190,7 @@ impl MemoryManager {
         }
 
         let reg = self.free_registers.pop_front()?;
-        self.register_types.insert(reg, RegisterType::Predicate); // Assuming predicate registers are U32
+        self.register_types.insert(reg, RegisterType::Predicate);
         Some((reg, RegisterType::Predicate))
     }
 
@@ -207,7 +209,6 @@ impl MemoryManager {
     pub fn assign_register(&mut self, index_type: IndexType, reg_type: RegisterType) -> Option<(u32, RegisterType)> {
         match index_type {
             IndexType::SpecialRegister(idx) => {
-                // Create a bridge register for the special register
                 let bridge_reg = self.get_or_create_bridge_register(idx, reg_type);
                 Some((bridge_reg, reg_type))
             }

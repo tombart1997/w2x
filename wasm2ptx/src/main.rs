@@ -25,7 +25,7 @@ fn main() {
     let mut func_bodies = Vec::new();
     let mut func_index_offset = 0;
     let mut function_signatures: Vec<Vec<ValType>> = Vec::new();
-    let mut func_type_map: Vec<usize> = Vec::new(); // Maps function indices to type indices
+    let mut func_type_map: Vec<usize> = Vec::new();
     for payload in parser.parse_all(&wasm_bytes) {
         match payload.expect("Failed parsing payload") 
         {
@@ -73,7 +73,6 @@ fn main() {
         }
     }
     for (export_idx, kernel_name) in exported_funcs {
-        println!("Exported function: {} with index {}", kernel_name, export_idx);
         let body_idx = export_idx - func_index_offset;
         let ops = &func_bodies[body_idx as usize];
         let (params, locals) = extract_all_variables(
@@ -115,26 +114,24 @@ fn extract_function_params(
     Vec::new()
 }
 
-/*
-    Extracts values from function body.
-*/
-
 fn extract_local_variables(
     wasm_bytes: &[u8],
+    func_body_index: usize,
 ) -> Vec<ValType> {
     let parser = Parser::new(0);
     let mut local_variables = Vec::new();
-    
+    let mut current_func = 0;
+
     for payload in parser.parse_all(wasm_bytes) {
-        match payload.expect("Failed parsing payload") {
-            Payload::CodeSectionEntry(body) => {
+        if let Ok(Payload::CodeSectionEntry(body)) = payload {
+            if current_func == func_body_index {
                 let locals_reader = body.get_locals_reader().expect("Failed to read locals");
                 for (count, local_type) in locals_reader.into_iter().flatten() {
                     local_variables.extend(std::iter::repeat(local_type).take(count as usize));
-                    break;
                 }
+                break;
             }
-            _ => {}
+            current_func += 1;
         }
     }
     local_variables
@@ -147,6 +144,6 @@ fn extract_all_variables(
     func_type_map: &[usize],
 ) -> (Vec<ValType>, Vec<ValType>) {
     let params = extract_function_params(func_index, function_signatures, func_type_map);
-    let locals = extract_local_variables(wasm_bytes);
+    let locals = extract_local_variables(wasm_bytes, func_index);
     (params, locals)
 }

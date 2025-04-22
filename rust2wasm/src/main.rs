@@ -14,7 +14,6 @@ fn main() {
         let ptr = break_down_matrix_mul();
         for i in 0..9 {
             let task = *ptr.add(i);  // Now this works fine
-            println!("KernelTask: row={}, col={}", task.row, task.col);
         }
     }
 }

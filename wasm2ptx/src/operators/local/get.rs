@@ -2,21 +2,26 @@ use crate::memory::{IndexType, MemoryManager, RegisterType};
 use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::stack::Stack;
 
+
 pub fn handle_local_get(
     local_index: u32,
     kernel_info: &crate::kernel_detector::KernelInfo,
+    param_count: usize,
+    local_count: usize,
     memory_manager:  &mut MemoryManager,
     stack: &mut Stack,
     entry_point:  &mut PTXEntryPoint,
     reg_type: &RegisterType,
 ) {
-    let index_type = if local_index < kernel_info.first_data_param as u32 {
+    let index_type = 
+    if local_index < kernel_info.first_data_param as u32 {
         IndexType::SpecialRegister(local_index as usize)
-    } else if local_index < kernel_info.first_data_param as u32 + 4 {
-        IndexType::KernelParameter(local_index as usize)
+    } else if local_index < param_count as u32 {
+        IndexType::KernelParameter((local_index) as usize)
     } else {
-        IndexType::LocalVariable((local_index - 4) as usize)
+        IndexType::LocalVariable((local_index) as usize)
     };
+
 
     match index_type {
         IndexType::SpecialRegister(idx) => {
@@ -36,6 +41,7 @@ pub fn handle_local_get(
         }
         IndexType::KernelParameter(idx) => {
             if let Some((param_reg, param_type)) = memory_manager.get_register(IndexType::KernelParameter(idx)) {
+                println!("LOCAL GET STACK PUSH Kernel parameter register: {:?}, type: {:?}", param_reg, param_type);
                 stack.push(param_reg, param_type);
             }
         }
