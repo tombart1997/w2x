@@ -56,6 +56,7 @@ pub fn handle_local_set(
             }
         }
         IndexType::LocalVariable(idx) => {
+            println!("LocalSet: idx: {}, reg_type: {:?}", idx, reg_type);
             let (raw_reg, reg_type) = if let Some((raw_reg, reg_type)) =
                 memory_manager.get_register(IndexType::LocalVariable(idx))
             {

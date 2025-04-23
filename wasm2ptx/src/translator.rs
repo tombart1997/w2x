@@ -305,7 +305,6 @@ pub fn get_nested_instructions<'a>(
     let mut nested_instructions = Vec::new();
     let mut depth = 1; 
     let mut idx = start_idx;
-
     while idx < ops.len() {
         match &ops[idx] {
             WasmOperator::Block { .. }
@@ -328,7 +327,6 @@ pub fn get_nested_instructions<'a>(
     }
     (nested_instructions, idx)
 }
-
 
 pub fn translate_ops_into_entry_point(
     ops: &[WasmOperator],

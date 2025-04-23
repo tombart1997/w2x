@@ -85,7 +85,7 @@ pub struct MemoryManager {
     free_registers: VecDeque<u32>,            
     special_registers: HashMap<SpecialRegister, String>,
     bridge_registers: HashMap<usize, u32>, 
-    local_registers: HashMap<u32, RegisterType>, 
+    local_registers: HashMap<u32, (u32, RegisterType)>,
     parameter_registers: HashMap<u32, RegisterType>,
 }
 
@@ -155,15 +155,13 @@ impl MemoryManager {
                     })
             }
             IndexType::KernelParameter(idx) => {
-                println!("get_register: {} is a kernel parameter", idx);
-                println!("get_register: parameter_registers: {:?}", self.parameter_registers);
                 self.parameter_registers.get(&((idx) as u32)).map(|reg_type| {
                     ((idx) as u32, *reg_type)
                 })
             }
             IndexType::LocalVariable(idx) => {
-                self.local_registers.get(&(idx as u32)).map(|reg_type| {
-                    (idx as u32, *reg_type)
+                self.local_registers.get(&(idx as u32)).map(|(reg, reg_type)| {
+                    (*reg, *reg_type)
                 })
             }
         }
@@ -219,7 +217,7 @@ impl MemoryManager {
             }
             IndexType::LocalVariable(idx) => {
                 let reg = self.free_registers.pop_front()?;
-                self.local_registers.insert(idx as u32, reg_type);
+                self.local_registers.insert(idx as u32, (reg, reg_type)); // Store both reg and type
                 self.register_types.insert(reg, reg_type);
                 Some((reg, reg_type))
             }

@@ -41,7 +41,6 @@ pub fn handle_local_get(
         }
         IndexType::KernelParameter(idx) => {
             if let Some((param_reg, param_type)) = memory_manager.get_register(IndexType::KernelParameter(idx)) {
-                println!("LOCAL GET STACK PUSH Kernel parameter register: {:?}, type: {:?}", param_reg, param_type);
                 stack.push(param_reg, param_type);
             }
         }
@@ -50,12 +49,12 @@ pub fn handle_local_get(
                 memory_manager.get_register(IndexType::LocalVariable(idx))
             {
                 (raw_reg, reg_type)
-            } else if let Some((raw_reg, reg_type)) = memory_manager.new_register(RegisterType::U32) {
+            } else if let Some((raw_reg, reg_type)) = memory_manager.assign_register(IndexType::LocalVariable(idx), *reg_type) {
                 (raw_reg, reg_type)
             } else {
                 panic!("No registers available for LocalGet! Index: {}", idx);
             };
-
+        
             stack.push(raw_reg, reg_type);
         }
     }

@@ -5,24 +5,25 @@ use core::panic::PanicInfo;
 
 #[repr(C)]
 pub struct ThreadIdx {
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
+    pub x: u32, // PTX: tid.x
+    pub y: u32, // PTX: tid.y
+    pub z: u32, // PTX: tid.z
 }
 
 #[repr(C)]
 pub struct BlockIdx {
-    pub x: u32,
-    pub y: u32, 
-    pub z: u32,
+    pub x: u32, // PTX: ctaid.x
+    pub y: u32, // PTX: ctaid.y
+    pub z: u32, // PTX: ctaid.z
 }
 
 #[repr(C)]
 pub struct BlockDim {
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
+    pub x: u32, // PTX: ntid.x
+    pub y: u32, // PTX: ntid.y
+    pub z: u32, // PTX: ntid.z
 }
+
 
 #[no_mangle]
 pub extern "C" fn vector_add_kernel(
@@ -82,7 +83,7 @@ pub extern "C" fn matrix_mul_kernel(
     n: usize, 
     p: usize, 
 ) {
-    let row = (block_idx.y * block_dim.y + thread_idx.y) as usize;
+    let row: usize = (block_idx.y * block_dim.y + thread_idx.y) as usize;
     let col = (block_idx.x * block_dim.x + thread_idx.x) as usize;
 
     if row < m && col < p {
