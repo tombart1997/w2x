@@ -27,7 +27,7 @@ pub fn handle_local_get(
         IndexType::SpecialRegister(idx) => {
             if let Some(special_register) = memory_manager.get_special_register_by_index(idx) {
                 if let Some(ptx_var) = memory_manager.get_special_register_name(special_register) {
-                    if let Some((result_reg, reg_type_out)) = memory_manager.new_register(RegisterType::U32) {
+                    if let Some((result_reg, reg_type_out)) = memory_manager.new_register(RegisterType::U64) {
                         let formatted_reg = memory_manager.format_register(result_reg, reg_type_out);
                         entry_point.add_instruction(PTXInstruction::Mov {
                             data_type: ".u32".to_string(),

@@ -9,14 +9,15 @@ pub fn handle_i32_const(
     value: &i32,
     reg_type: &RegisterType,
 ) { 
-    if let Some((result_reg, reg_type)) = memory_manager.new_register(*reg_type) {
-        let formatted_result = memory_manager.format_register(result_reg, reg_type);
+    let actual_type = if *value < 0 { RegisterType::S32 } else { *reg_type };
+    if let Some((result_reg, _)) = memory_manager.new_register(actual_type) {
+        let formatted_result = memory_manager.format_register(result_reg, actual_type);
         entry_point.add_instruction(PTXInstruction::Mov {
-            data_type: if value < &0 { ".s32".to_string() } else { ".u32".to_string() },
+            data_type: if *value < 0 { ".s32".to_string() } else { ".u32".to_string() },
             destination: formatted_result.clone(),
             source: value.to_string(),
         });
-        stack.push(result_reg, reg_type);
+        stack.push(result_reg, actual_type);
     } else {
         panic!("Failed to allocate a new register for I32Const operation");
     }

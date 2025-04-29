@@ -24,22 +24,37 @@ pub fn handle_local_set(
 
 
     let (val, val_type) = stack.pop().expect("Stack underflow during LocalSet");
+    println!("LocalSet: val: {:?}, val_type: {:?}", val, val_type);
 
     match index_type {
         IndexType::SpecialRegister(idx) => {
-            let bridge_reg = memory_manager.get_or_create_bridge_register(idx, *reg_type);
-            let (converted_val, converted_type) = if val_type != *reg_type {
-                convert_register(entry_point, memory_manager, val, val_type, *reg_type)
+            // Get or create the bridge register for this special index
+            if let Some((bridge_reg, bridge_type)) 
+                = memory_manager.get_or_create_bridge_register(idx as usize, val_type) {
+                println!("LocalSet: idx: {}, reg_type: {:?}", idx, reg_type);
+                println!("LocalSet: bridge_reg: {:?}, bridge_type: {:?}", bridge_reg, bridge_type);
+                println!("LocalSet: val: {:?}, val_type: {:?}", val, val_type);
+                // Add the mov instruction to move the stack value into the bridge register
+                            // Convert value to bridge_type if needed
+                let (converted_val, converted_type) = if val_type != bridge_type {
+                    convert_register(entry_point, memory_manager, val, val_type, bridge_type)
+                } else {
+                    (val, val_type)
+                };
+                entry_point.add_instruction(PTXInstruction::Mov {
+                    data_type: val_type.to_ptx_type().to_string(),
+                    destination: memory_manager.format_register(bridge_reg, bridge_type), // Use bridge_type here
+                    source: memory_manager.format_register(converted_val, converted_type),
+                });
+                println!("source register: {:?}", memory_manager.format_register(val, val_type));
+                println!("destination register: {:?}", memory_manager.format_register(bridge_reg, bridge_type)); // Use bridge_type here
             } else {
-                (val, val_type)
-            };
-            entry_point.add_instruction(PTXInstruction::Mov {
-                data_type: reg_type.to_ptx_type().to_string(),
-                destination: memory_manager.format_register(bridge_reg, *reg_type),
-                source: memory_manager.format_register(converted_val, converted_type),
-            });
+                // Handle the case where register allocation failed
+                panic!("Failed to get or create bridge register for special index {} in LocalSet", idx);
+            }
         }
         IndexType::KernelParameter(idx) => {
+            println!("LocalSet: idx: {}, reg_type: {:?}", idx, reg_type);
             if let Some((param_reg, param_type)) = memory_manager.get_register(IndexType::KernelParameter(idx)) {
                 let (converted_val, converted_type) = if val_type != param_type {
                     convert_register(entry_point, memory_manager, val, val_type, param_type)

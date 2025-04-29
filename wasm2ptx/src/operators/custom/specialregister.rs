@@ -10,20 +10,30 @@ pub fn handle_special_register(
     entry_point: &mut PTXEntryPoint,
     reg_type: &RegisterType,
 ) { 
-    let bridge_reg = memory_manager.get_bridge_register(local_index as usize);
-    if let Some(bridge_reg) = bridge_reg {
-        let formatted_bridge_reg = memory_manager.format_register(bridge_reg, RegisterType::U32);
-        stack.push(bridge_reg, RegisterType::U32);
-    } else {
-        let new_bridge_reg = memory_manager.get_or_create_bridge_register(local_index as usize, RegisterType::U32);
-        let formatted_special_reg = memory_manager.get_special_register_name(*reg)
-            .expect("Failed to get special register name");
-        let formatted_bridge_reg = memory_manager.format_register(new_bridge_reg, RegisterType::U32);
-        entry_point.add_instruction(PTXInstruction::Mov {
-            data_type: reg_type.to_ptx_type().to_string(),
-            destination: formatted_bridge_reg.clone(),
-            source: formatted_special_reg.clone(),
-        });
-        stack.push(new_bridge_reg, RegisterType::U32);
+    if let Some((bridge_reg, bridge_type)) = memory_manager.get_bridge_register(local_index as usize, RegisterType::U32) {
+        // If found, push it onto the stack
+        stack.push(bridge_reg, bridge_type);
+    }  else {
+        // If not found, create a new bridge register of the desired type
+        if let Some((new_bridge_reg, new_bridge_type)) = memory_manager.get_or_create_bridge_register(local_index as usize, RegisterType::U32) {
+            let formatted_special_reg = memory_manager.get_special_register_name(*reg)
+                .expect("Failed to get special register name");
+
+
+            println!("SpecialRegister:, new_bridge_reg: {:?}, new_bridge_type: {:?}", new_bridge_reg, new_bridge_type);
+            let formatted_bridge_reg = memory_manager.format_register(new_bridge_reg, new_bridge_type);
+            println!("SpecialRegister: formatted_special_reg: {:?}, formatted_bridge_reg: {:?}", formatted_special_reg, formatted_bridge_reg);
+
+            // Emit a mov or cvt instruction to copy the special register value into the new bridge register
+            // PTX special registers are always .u32, so we might need a conversion if the desired type is .u64
+            entry_point.add_instruction(PTXInstruction::Mov {
+                data_type: reg_type.to_ptx_type().to_string(),
+                destination: formatted_bridge_reg.clone(),
+                source: formatted_special_reg.clone(),
+            });
+            stack.push(new_bridge_reg, new_bridge_type);
+        } else {
+            panic!("Failed to get or create bridge register for special index {}", local_index);
+        }
     }
 }

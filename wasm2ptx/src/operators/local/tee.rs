@@ -27,18 +27,23 @@ pub fn handle_local_tee(
 
     match index_type {
         IndexType::SpecialRegister(idx) => {
-            let bridge_reg = memory_manager.get_or_create_bridge_register(idx, *reg_type);
-            let (converted_val, converted_type) = if val_type != *reg_type {
-                convert_register(entry_point, memory_manager, val, val_type, *reg_type)
+
+            if let Some((bridge_reg, bridge_type)) = memory_manager.get_or_create_bridge_register(idx as usize, val_type) {
+                let (converted_val, converted_type) = if val_type != *reg_type {
+                    convert_register(entry_point, memory_manager, val, val_type, *reg_type)
+                } else {
+                    (val, val_type)
+                };
+                entry_point.add_instruction(PTXInstruction::Mov {
+                    data_type: reg_type.to_ptx_type().to_string(),
+                    destination: memory_manager.format_register(bridge_reg, bridge_type),
+                    source: memory_manager.format_register(converted_val, converted_type),
+                });
+                stack.push(converted_val, converted_type);
             } else {
-                (val, val_type)
-            };
-            entry_point.add_instruction(PTXInstruction::Mov {
-                data_type: reg_type.to_ptx_type().to_string(),
-                destination: memory_manager.format_register(bridge_reg, *reg_type),
-                source: memory_manager.format_register(converted_val, converted_type),
-            });
-            stack.push(converted_val, converted_type);
+                // Handle the case where register allocation failed
+                panic!("Failed to get or create bridge register for special index {} in LocalSet", idx);
+            }
         }
         IndexType::KernelParameter(idx) => {
             if let Some((param_reg, param_type)) = memory_manager.get_register(IndexType::KernelParameter(idx)) {

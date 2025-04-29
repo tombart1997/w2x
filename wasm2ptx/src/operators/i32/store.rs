@@ -3,7 +3,6 @@ use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::stack::Stack;
 use crate::utils::convert_register;
 
-
 pub fn handle_i32_store(
     memory_manager: &mut MemoryManager,
     stack: &mut Stack,
@@ -14,15 +13,15 @@ pub fn handle_i32_store(
     let (value, value_type) = stack.pop().expect("Stack underflow during I32Store (value)");
     let (address, address_type) = stack.pop().expect("Stack underflow during I32Store (address)");
 
-    // Convert the value to U32 if necessary
-    let formatted_value = if value_type != RegisterType::U32 {
-        convert_register(entry_point, memory_manager, value, value_type, RegisterType::U32)
+    // Upcast value to reg_type if needed (never downcast)
+    let formatted_value = if value_type != *reg_type {
+        convert_register(entry_point, memory_manager, value, value_type, *reg_type)
     } else {
         (value, value_type)
     };
-    // Convert the address to U64 if necessary
+    // Always upcast address to U64
     let formatted_address = if address_type != RegisterType::U64 {
-        convert_register( entry_point, memory_manager, address, address_type, RegisterType::U64)
+        convert_register(entry_point, memory_manager, address, address_type, RegisterType::U64)
     } else {
         (address, address_type)
     };

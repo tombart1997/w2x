@@ -12,6 +12,13 @@ pub fn convert_register(
     if source_type == target_type {
         return (source, source_type);
     }
+    // Disallow 64->32 conversions
+    if (source_type == RegisterType::U64 && target_type == RegisterType::U32)
+        || (source_type == RegisterType::S64 && target_type == RegisterType::S32)
+        || (source_type == RegisterType::I64 && target_type == RegisterType::I32)
+    {
+        panic!("Unsafe conversion from 64-bit to 32-bit is not allowed: {:?} -> {:?}", source_type, target_type);
+    }
     if let RegisterType::Special(_) = source_type {
         return (source, source_type);
     }
@@ -43,6 +50,26 @@ pub fn convert_register(
         )),
         (RegisterType::F32, RegisterType::U64) => PTXInstruction::Other(format!(
             "cvt.rzi.u64.f32 {}, {};",
+            formatted_result, formatted_source
+        )),
+        (RegisterType::U32, RegisterType::U64) => PTXInstruction::Other(format!(
+            "cvt.u64.u32 {}, {};", 
+            formatted_result, formatted_source
+        )),
+        (RegisterType::S32, RegisterType::U64) => PTXInstruction::Other(format!(
+            "cvt.u64.s32 {}, {};", 
+            formatted_result, formatted_source
+        )),
+        (RegisterType::S32, RegisterType::S64) => PTXInstruction::Other(format!(
+            "cvt.s64.s32 {}, {};", 
+            formatted_result, formatted_source
+        )),
+        (RegisterType::S64, RegisterType::U64) => PTXInstruction::Other(format!(
+            "cvt.u64.s64 {}, {};", 
+            formatted_result, formatted_source
+        )),
+        (RegisterType::U32, RegisterType::S64) => PTXInstruction::Other(format!(
+            "cvt.s64.u32 {}, {};", 
             formatted_result, formatted_source
         )),
         _ => panic!(
