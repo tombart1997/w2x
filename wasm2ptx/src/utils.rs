@@ -12,13 +12,6 @@ pub fn convert_register(
     if source_type == target_type {
         return (source, source_type);
     }
-    // Disallow 64->32 conversions
-    if (source_type == RegisterType::U64 && target_type == RegisterType::U32)
-        || (source_type == RegisterType::S64 && target_type == RegisterType::S32)
-        || (source_type == RegisterType::I64 && target_type == RegisterType::I32)
-    {
-        panic!("Unsafe conversion from 64-bit to 32-bit is not allowed: {:?} -> {:?}", source_type, target_type);
-    }
     if let RegisterType::Special(_) = source_type {
         return (source, source_type);
     }
