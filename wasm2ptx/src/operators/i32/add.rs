@@ -12,27 +12,22 @@ pub fn handle_i32_add(
     let (right, right_type) = stack.pop().expect("Stack underflow during I32Add");
     let (left, left_type) = stack.pop().expect("Stack underflow during I32Add");
 
-    // Determine if we need 64-bit and what the result type should be
     let requires_u64 = right_type.is_64() || left_type.is_64();
     let is_signed = right_type.is_signed() || left_type.is_signed();
 
-    // Upcast operands as needed, preserving signedness
     let (right, right_type) = if requires_u64 && !right_type.is_64() {
         let target_type = if right_type.is_signed() { RegisterType::S64 } else { RegisterType::U64 };
-        println!("Converting right operand from {:?} to {:?}", right_type, target_type);
         convert_register(entry_point, memory_manager, right, right_type, target_type)
     } else {
         (right, right_type)
     };
     let (left, left_type) = if requires_u64 && !left_type.is_64() {
         let target_type = if left_type.is_signed() { RegisterType::S64 } else { RegisterType::U64 };
-        println!("Converting left operand from {:?} to {:?}", left_type, target_type);
         convert_register(entry_point, memory_manager, left, left_type, target_type)
     } else {
         (left, left_type)
     };
 
-    // Choose result type and PTX add type
     let result_type = if requires_u64 {
         if is_signed { RegisterType::S64 } else { RegisterType::U64 }
     } else {

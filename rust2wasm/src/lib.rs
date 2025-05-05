@@ -5,23 +5,23 @@ use core::panic::PanicInfo;
 
 #[repr(C)]
 pub struct ThreadIdx {
-    pub x: u32, // PTX: tid.x
-    pub y: u32, // PTX: tid.y
-    pub z: u32, // PTX: tid.z
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
 }
 
 #[repr(C)]
 pub struct BlockIdx {
-    pub x: u32, // PTX: ctaid.x
-    pub y: u32, // PTX: ctaid.y
-    pub z: u32, // PTX: ctaid.z
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
 }
 
 #[repr(C)]
 pub struct BlockDim {
-    pub x: u32, // PTX: ntid.x
-    pub y: u32, // PTX: ntid.y
-    pub z: u32, // PTX: ntid.z
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
 }
 
 

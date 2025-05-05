@@ -101,6 +101,9 @@ impl RegisterType {
     }
 }
 
+/*
+ Consider other data structures or explanations for these 
+*/
 pub struct MemoryManager {
     register_types: HashMap<u32, RegisterType>,
     free_registers: VecDeque<u32>,            

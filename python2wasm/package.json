@@ -1,0 +1,12 @@
+{
+  "name": "python2wasm",
+  "version": "1.0.0",
+  "description": "This directory contains Python implementations of the same kernels as in `rust2wasm/lib.rs`, for experimentation with Python-to-WASM toolchains.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
