@@ -21,8 +21,6 @@ pub fn handle_local_get(
     } else {
         IndexType::LocalVariable((local_index) as usize)
     };
-
-
     match index_type {
         IndexType::SpecialRegister(idx) => {
             if let Some(special_register) = memory_manager.get_special_register_by_index(idx) {

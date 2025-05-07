@@ -10,37 +10,42 @@ pub fn handle_i32_ltu(
     memory_manager: &mut MemoryManager,
     stack: &mut Stack,
     entry_point: &mut PTXEntryPoint,
-) {
-    let (right, right_type) = stack.pop().expect("Stack underflow during I32LtU (right)");
-    let (left, left_type) = stack.pop().expect("Stack underflow during I32LtU (left)");
-
-
-    let (right, right_type) = if right_type == RegisterType::U64 {
+) {  
+    let (right, right_type) = stack.pop().expect("Stack underflow during I32LtU");
+    let (left, left_type) = stack.pop().expect("Stack underflow during I32LtU");
+    
+    let use_u64 = right_type == RegisterType::U64 || left_type == RegisterType::U64;
+    
+    let (right, right_type) = if use_u64 && right_type != RegisterType::U64 {
+        convert_register(entry_point, memory_manager, right, right_type, RegisterType::U64)
+    } else if !use_u64 && right_type != RegisterType::U32 {
         convert_register(entry_point, memory_manager, right, right_type, RegisterType::U32)
     } else {
         (right, right_type)
     };
-
-    let (left, left_type) = if  left_type == RegisterType::U64 {
+    
+    let (left, left_type) = if use_u64 && left_type != RegisterType::U64 {
+        convert_register(entry_point, memory_manager, left, left_type, RegisterType::U64)
+    } else if !use_u64 && left_type != RegisterType::U32 {
         convert_register(entry_point, memory_manager, left, left_type, RegisterType::U32)
     } else {
         (left, left_type)
     };
-
-    let data_type= ".u32" ;
-
-    let (pred_reg, pred_type) = memory_manager
-        .new_predicate_register()
-        .expect("Failed to allocate predicate register for I32LtU");
-    let formatted_pred = memory_manager.format_register(pred_reg, pred_type);
-    let formatted_left = memory_manager.format_register(left, RegisterType::U32 );
-    let formatted_right = memory_manager.format_register(right, RegisterType::U32);
-    entry_point.add_instruction(PTXInstruction::Setp {
-        predicate: formatted_pred.clone(),
-        data_type: data_type.to_string(),
-        operand1: formatted_left,
-        operand2: formatted_right,
-        comparison: ".lt".to_string(),
-    });
-    stack.push(pred_reg, RegisterType::Predicate);
+    
+    let data_type = if use_u64 { ".u64" } else { ".u32" };
+    let comparison = ".lt".to_string();
+    
+    if let Some((pred_reg, reg_type)) = memory_manager.new_predicate_register() {
+        let formatted_pred_reg = memory_manager.format_register(pred_reg, reg_type);
+        entry_point.add_instruction(PTXInstruction::Setp {
+            predicate: formatted_pred_reg.clone(),
+            data_type: data_type.to_string(),
+            operand1: memory_manager.format_register(left, if use_u64 { RegisterType::U64 } else { RegisterType::U32 }),
+            operand2: memory_manager.format_register(right, if use_u64 { RegisterType::U64 } else { RegisterType::U32 }),
+            comparison,
+        });
+        stack.push(pred_reg, RegisterType::Predicate);
+    } else {
+        panic!("Failed to allocate predicate register for I32Ltu");
+    }
 }
