@@ -1,0 +1,2 @@
+tom@LAPTOP-FJ5CNF6L:/mnt/c/Documents and Settings/TomWalter/w2x/go2wasm$ tinygo build -o main.wasm -target=wasm -opt=z --no-debug --scheduler=none -buildmode=c-shared
+tom@LAPTOP-FJ5CNF6L:/mnt/c/Documents and Settings/TomWalter/w2x/go2wasm$ wasm2wat main.wasm -o main.wat

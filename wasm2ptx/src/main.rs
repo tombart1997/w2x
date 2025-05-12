@@ -73,7 +73,6 @@ fn main() {
         }
     }
     for (export_idx, kernel_name) in exported_funcs {
-        println!("Exported function: {} with index: {}", kernel_name, export_idx);
         let body_idx = export_idx - func_index_offset;
         let ops = &func_bodies[body_idx as usize];
         let (params, locals) = extract_all_variables(

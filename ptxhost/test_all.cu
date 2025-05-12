@@ -12,8 +12,8 @@ const char* ptx_code = R"ptx(
     .param .u64 param11,
     .param .u64 param12
 ) {
-    .reg .u32 %r2, %r3, %r8, %r0, %r17, %r21, %r1, %r20, %r4, %r7;
-    .reg .u64 %rd14, %rd15, %rd11, %rd12, %rd16, %rd19, %rd13, %rd9, %rd18, %rd10, %rd5;
+    .reg .u32 %r2, %r3, %r1, %r8, %r4, %r20, %r21, %r0, %r7, %r17;
+    .reg .u64 %rd19, %rd14, %rd18, %rd11, %rd10, %rd15, %rd12, %rd5, %rd9, %rd16, %rd13;
     .reg .pred %p6;
     vector_add_kernel_start:
     ld.param.u64 %rd9, [param9];
@@ -53,8 +53,8 @@ const char* ptx_code = R"ptx(
     .param .u64 param11,
     .param .u64 param12
 ) {
-    .reg .u32 %r3, %r1, %r6, %r28, %r7, %r8, %r4, %r18, %r24, %r15, %r13, %r16, %r14, %r2, %r0, %r17, %r27, %r5, %r29, %r30;
-    .reg .u64 %rd22, %rd20, %rd9, %rd10, %rd11, %rd25, %rd12, %rd21, %rd23, %rd26;
+    .reg .u32 %r6, %r14, %r2, %r4, %r3, %r16, %r24, %r0, %r7, %r27, %r28, %r17, %r15, %r8, %r29, %r1, %r30, %r5, %r13;
+    .reg .u64 %rd18, %rd20, %rd23, %rd12, %rd21, %rd25, %rd9, %rd11, %rd22, %rd10, %rd26;
     .reg .pred %p19;
     vector_add_loop_kernel_start:
     ld.param.u64 %rd9, [param9];
@@ -80,8 +80,8 @@ const char* ptx_code = R"ptx(
     mov.u32 %r0, %r17;
     loop_0_start:
     block_2_start:
-    cvt.u32.u64 %r18, %rd12;
-    setp.lt.u32 %p19, %r1, %r18;
+    cvt.u64.u32 %rd18, %r1;
+    setp.lt.u64 %p19, %rd18, %rd12;
     @%p19 bra block_2_end;
     ret;
     block_2_end:
@@ -112,9 +112,9 @@ const char* ptx_code = R"ptx(
     .param .u64 param13,
     .param .u64 param14
 ) {
-    .reg .u32 %r1, %r45, %r38, %r34, %r49, %r52, %r24, %r3, %r51, %r16, %r30, %r53, %r42, %r23, %r8, %r2, %r50, %r4, %r18, %r41, %r21, %r17, %r15, %r0, %r5;
-    .reg .u64 %rd46, %rd55, %rd6, %rd29, %rd9, %rd22, %rd36, %rd12, %rd39, %rd32, %rd13, %rd19, %rd25, %rd10, %rd40, %rd54, %rd33, %rd28, %rd37, %rd48, %rd44, %rd56, %rd27, %rd43, %rd47, %rd14, %rd31, %rd11, %rd26;
-    .reg .pred %p20, %p7, %p35;
+    .reg .u32 %r49, %r15, %r2, %r5, %r50, %r51, %r8, %r23, %r4, %r34, %r38, %r41, %r45, %r30, %r21, %r0, %r17, %r1, %r18, %r16, %r42, %r3, %r24, %r52, %r53;
+    .reg .u64 %rd56, %rd26, %rd29, %rd11, %rd6, %rd12, %rd37, %rd43, %rd46, %rd55, %rd28, %rd14, %rd54, %rd48, %rd13, %rd32, %rd44, %rd47, %rd31, %rd10, %rd40, %rd9, %rd36, %rd19, %rd27, %rd33, %rd25, %rd39, %rd22;
+    .reg .pred %p35, %p20, %p7;
     matrix_mul_kernel_start:
     ld.param.u64 %rd9, [param9];
     ld.param.u64 %rd10, [param10];
@@ -142,7 +142,7 @@ const char* ptx_code = R"ptx(
     setp.ge.u64 %p20, %rd19, %rd14;
     @%p20 bra block_3_end;
     mov.u32 %r21, 2;
-    shl.b64 %rd22, %rd14, %r21;
+    shl.b32 %rd22, %rd14, %r21;
     mov.u64 %rd12, %rd22;
     mov.u32 %r23, 2;
     shl.b32 %r24, %r15, %r23;
@@ -152,7 +152,7 @@ const char* ptx_code = R"ptx(
     cvt.u64.u32 %rd28, %r5;
     mul.lo.s64 %rd29, %rd28, %rd13;
     mov.u32 %r30, 2;
-    shl.b64 %rd31, %rd29, %r30;
+    shl.b32 %rd31, %rd29, %r30;
     add.u64 %rd32, %rd9, %rd31;
     mov.u64 %rd33, %rd32;
     mov.u32 %r34, 0;
@@ -164,7 +164,7 @@ const char* ptx_code = R"ptx(
     cvt.u64.u32 %rd36, %r5;
     mul.lo.s64 %rd37, %rd36, %rd14;
     mov.u32 %r38, 2;
-    shl.b64 %rd39, %rd37, %r38;
+    shl.b32 %rd39, %rd37, %r38;
     add.u64 %rd40, %rd11, %rd39;
     mov.u32 %r41, 2;
     shl.b32 %r42, %r15, %r41;
@@ -194,6 +194,8 @@ const char* ptx_code = R"ptx(
     block_3_end:
     matrix_mul_kernel_end:
 }
+
+
 )ptx";
 
 

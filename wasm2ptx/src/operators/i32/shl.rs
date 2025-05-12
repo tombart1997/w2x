@@ -3,6 +3,31 @@ use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::stack::Stack;
 use crate::utils::convert_register;
 
+/*
+    NVIDIA PTX Documentation states:
+    For .SHL OPS 
+    Syntax
+
+    shl.type d, a, b;
+
+    .type = { .b16, .b32, .b64 };
+    Description
+
+    Shift a left by the amount specified by unsigned 32-bit value in b.
+
+    shr.type d, a, b;
+
+    .type = { .b16, .b32, .b64,
+            .u16, .u32, .u64,
+            .s16, .s32, .s64 };
+
+    The sizes of the destination and first source operand must match, 
+    but not necessarily the type. 
+
+    The b operand must be a 32-bit value, regardless of the instruction type.
+*/
+
+
 pub fn handle_i32_shl(
     memory_manager: &mut MemoryManager,
     stack: &mut Stack,
@@ -11,26 +36,17 @@ pub fn handle_i32_shl(
     let (shift_amount, shift_type) = stack.pop().expect("Stack underflow during I32Shl");
     let (value, value_type) = stack.pop().expect("Stack underflow during I32Shl");
 
-    let use_u64 = value_type == RegisterType::U64;
-
-    // Upcast value to U64 if needed
-    let (value, value_type) = if use_u64 && value_type != RegisterType::U64 {
-        convert_register(entry_point, memory_manager, value, value_type, RegisterType::U64)
-    } else if !use_u64 && value_type != RegisterType::U32 {
-        convert_register(entry_point, memory_manager, value, value_type, RegisterType::U32)
-    } else {
-        (value, value_type)
-    };
+    let use_u64 = value_type.is_64();
 
     // Always convert shift amount to U32
-    let (shift_amount, _) = if shift_type != RegisterType::U32 {
-        convert_register(entry_point, memory_manager, shift_amount, shift_type, RegisterType::U32)
+    let (shift_amount, _) = if shift_type.is_32() == false{
+        convert_register(entry_point, memory_manager, shift_amount, shift_type, shift_type.get_32_equivalent())
     } else {
         (shift_amount, shift_type)
     };
 
-    let result_type = if use_u64 { RegisterType::U64 } else { RegisterType::U32 };
-    let shl_instr = if use_u64 { "shl.b64" } else { "shl.b32" };
+    let result_type = value_type;
+    let shl_instr =  "shl.b32" ;
 
     if let Some((result_reg, reg_type)) = memory_manager.new_register(result_type) {
         let formatted_result = memory_manager.format_register(result_reg, reg_type);

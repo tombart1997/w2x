@@ -99,6 +99,26 @@ impl RegisterType {
             RegisterType::Special(_) => ".u32",    
         }
     }
+
+    pub fn get_64_equivalent(&self) -> RegisterType {
+        match self {
+            RegisterType::U32 | RegisterType::U64 => RegisterType::U64,
+            RegisterType::S32 | RegisterType::S64 => RegisterType::S64,
+            RegisterType::I32 | RegisterType::I64 => RegisterType::I64,
+            RegisterType::F32 | RegisterType::F64 => RegisterType::F64,
+            _ => *self,
+        }
+    }
+
+    pub fn get_32_equivalent(&self) -> RegisterType {
+        match self {
+            RegisterType::U64 | RegisterType::U32 => RegisterType::U32,
+            RegisterType::S64 | RegisterType::S32 => RegisterType::S32,
+            RegisterType::I64 | RegisterType::I32 => RegisterType::I32,
+            RegisterType::F64 | RegisterType::F32 => RegisterType::F32,
+            _ => *self,
+        }
+    }
 }
 
 /*
