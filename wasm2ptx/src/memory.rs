@@ -185,18 +185,12 @@ impl MemoryManager {
                 // Type mismatch: allocate a new bridge register of the requested type
                 let (new_bridge_reg, new_bridge_type) = self.new_register(reg_type)?;
                 self.bridge_registers.insert(special_index, (new_bridge_reg, new_bridge_type));
-                println!(
-                    "get_or_create_bridge_register: Replacing bridge register for special_index {} with new type {:?}",
-                    special_index, new_bridge_type
-                );
                 return Some((new_bridge_reg, new_bridge_type));
             }
         }
-        println!("get_or_create_bridge_register: Allocating new bridge register for special_index: {}", special_index);
         let (bridge_reg, bridge_type) = self.new_register(reg_type).expect("Failed to allocate bridge register");
         // Insert with special_index as key and (reg, type) as value
         self.bridge_registers.insert(special_index, (bridge_reg, reg_type));
-        println!("get_or_create_bridge_register: Allocated bridge register: {}", bridge_reg);
         Some((bridge_reg, bridge_type))
     }
 
@@ -266,7 +260,6 @@ impl MemoryManager {
 
         let reg = self.free_registers.pop_front()?;
         self.register_types.insert(reg, reg_type);
-        println!("new_register: Allocated register: {} with type: {:?}", reg, reg_type);
         Some((reg, reg_type))
     }
 

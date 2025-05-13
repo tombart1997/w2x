@@ -46,8 +46,7 @@ pub fn handle_i32_shl(
     };
 
     let result_type = value_type;
-    let shl_instr =  "shl.b32" ;
-
+    let shl_instr = if use_u64 { "shl.b64" } else { "shl.b32" };
     if let Some((result_reg, reg_type)) = memory_manager.new_register(result_type) {
         let formatted_result = memory_manager.format_register(result_reg, reg_type);
         let formatted_value = memory_manager.format_register(value, value_type);

@@ -115,6 +115,12 @@ pub enum PTXInstruction {
         operand1: String,
         operand2: String,
     },
+    Sub {
+        data_type: String,
+        destination: String,
+        operand1: String,
+        operand2: String,
+    },
     Mul {
         data_type: String,
         destination: String,
@@ -146,6 +152,7 @@ pub enum PTXInstruction {
     Return {
     },
     Other(String),
+    Trap,
 }
 
 impl ToString for PTXInstruction {
@@ -175,6 +182,12 @@ impl ToString for PTXInstruction {
                 operand1,
                 operand2,
             } => format!("add{} {}, {}, {};", data_type, destination, operand1, operand2),
+            PTXInstruction::Sub {
+                data_type,
+                destination,
+                operand1,
+                operand2,
+            } => format!("sub{} {}, {}, {};", data_type, destination, operand1, operand2),
             PTXInstruction::Mul {
                 data_type,
                 destination,
@@ -203,6 +216,7 @@ impl ToString for PTXInstruction {
             PTXInstruction::Return {} => "ret;".to_string(),
             PTXInstruction::Label { name } => format!("{}:", name),
             PTXInstruction::Other(instruction) => instruction.clone(),
+            PTXInstruction::Trap => "trap;".to_string(),
         }
     }
 }

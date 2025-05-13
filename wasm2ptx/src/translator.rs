@@ -155,6 +155,13 @@ fn translate_to_ptx_instruction(
                 entry_point,
             );
         }
+        WasmOperator::I32Sub => {
+            crate::operators::i32::sub::handle_i32_sub(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
         WasmOperator::I32Mul => {
             crate::operators::i32::mul::handle_i32_mul(
                 memory_manager,
@@ -203,6 +210,20 @@ fn translate_to_ptx_instruction(
         }
         WasmOperator::I32LtU => {
             crate::operators::i32::ltu::handle_i32_ltu(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32GtU => {
+            crate::operators::i32::gtu::handle_i32_gtu(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32Eqz => {
+            crate::operators::i32::eqz::handle_i32_eqz(
                 memory_manager,
                 stack,
                 entry_point,
@@ -290,7 +311,9 @@ fn translate_to_ptx_instruction(
             crate::operators::controlflow::end::handle_end(
             );
         }
-
+        WasmOperator::Unreachable => {
+            crate::operators::controlflow::unreachable::handle_unreachable(entry_point);
+        }
         _ => {
             println!("Unhandled operator: {:?}", op);
         }

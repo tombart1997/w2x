@@ -6,3 +6,6 @@ pub mod mul;
 pub mod shl;
 pub mod store;
 pub mod ltu;
+pub mod gtu;
+pub mod sub;
+pub mod eqz;

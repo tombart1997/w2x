@@ -20,13 +20,14 @@ pub enum WasmOperator {
         reg_type: RegisterType 
     },
     I32Add,
+    I32Sub,
     I32And,
     I32Eq,
     I32Eqz,
     I32Ne,
     I32LtU,
+    I32GtU,
     I32Const { value: i32, reg_type: RegisterType },
-    I32Sub,
     I32Mul,
     I32GeU,
     I32Shl,
@@ -39,6 +40,7 @@ pub enum WasmOperator {
     Block { block_id: usize },
     Br { relative_depth: u32 },
     If { block_id: usize },
+    Unreachable,
 }
 
 fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<SpecialRegister> {
@@ -83,10 +85,23 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             local_index: *local_index,
             reg_type: get_variable_type(*local_index, all_variables)
         },
+        Operator::LocalTee { local_index } => {
+            let local_index = *local_index;
+            let reg_type = get_variable_type(local_index, all_variables);
         
-        Operator::LocalTee { local_index } => WasmOperator::LocalTee {
-            local_index: *local_index,
-            reg_type: get_variable_type(*local_index, all_variables)
+            if is_kernel {
+                if let Some(special_reg) = map_local_to_special_register(local_index, is_kernel) {
+                    return WasmOperator::SpecialRegister {
+                        local_index,
+                        reg: special_reg,
+                        reg_type: RegisterType::Special(special_reg),
+                    };
+                }
+            }
+            WasmOperator::LocalTee {
+                local_index,
+                reg_type,
+            }
         },
         Operator::I32Const { value } => WasmOperator::I32Const { 
             value: *value, 
@@ -99,6 +114,7 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
         Operator::I32Sub => WasmOperator::I32Sub,
         Operator::I32Mul => WasmOperator::I32Mul,
         Operator::I32LtU => WasmOperator::I32LtU,
+        Operator::I32GtU => WasmOperator::I32GtU,
         Operator::I32GeU => WasmOperator::I32GeU,
         Operator::I32Shl => WasmOperator::I32Shl,
         Operator::I32Ne => WasmOperator::I32Ne,   
@@ -109,6 +125,13 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             reg_type: RegisterType::U32 
         },
         Operator::BrIf { relative_depth } => WasmOperator::BrIf { relative_depth: *relative_depth },
+        Operator::If { .. } => {
+            static mut BLOCK_COUNTER: usize = 0;
+            unsafe {
+                BLOCK_COUNTER += 1;
+                WasmOperator::If { block_id: BLOCK_COUNTER }
+            }
+        },
         Operator::Loop { .. } => WasmOperator::Loop { block_id: 0 },
         Operator::End => WasmOperator::End,
         Operator::Return => WasmOperator::Return,
@@ -120,6 +143,7 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             }
         },
         Operator::Br { relative_depth } => WasmOperator::Br { relative_depth: *relative_depth },
+        Operator::Unreachable => WasmOperator::Unreachable,
         _ => unimplemented!("Unhandled operator conversion: {:?}", op),
     }
 }

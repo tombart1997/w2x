@@ -16,7 +16,7 @@ use crate::label_context::{LabelContext, LabelKind, LabelFrame};
 
 fn main() {
     env_logger::init();
-    let wasm_bytes = fs::read("test/vector_wasm.wasm").expect("Failed to read input.wasm");
+    let wasm_bytes = fs::read("test/go.wasm").expect("Failed to read input.wasm");
     let mut ptx_module = PTXModule::new(".version 8.0".to_string(), ".target sm_80".to_string());
     let parser = Parser::new(0);
     let mut ptx_code = String::new();
