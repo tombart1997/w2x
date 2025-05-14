@@ -290,14 +290,12 @@ fn translate_to_ptx_instruction(
                 current_idx,
             );
         }
-        WasmOperator::SpecialRegister { reg, reg_type, local_index } => {
+        WasmOperator::SpecialRegister { local_index } => {
             crate::operators::custom::specialregister::handle_special_register(
                 *local_index,
-                reg,
                 memory_manager,
                 stack,
                 entry_point,
-                reg_type,
             );
         }
         WasmOperator::Return => {

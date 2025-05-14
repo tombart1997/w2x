@@ -63,6 +63,22 @@ impl std::fmt::Display for SpecialRegister {
 }
 
 
+pub fn map_local_to_special_register(local_index: u32) -> Option<SpecialRegister> {
+    match local_index as usize {
+        idx if idx == 0 => Some(SpecialRegister::ThreadIdX),
+        idx if idx == 1 => Some(SpecialRegister::ThreadIdY),
+        idx if idx == 2 => Some(SpecialRegister::ThreadIdZ),
+        idx if idx == 3 => Some(SpecialRegister::BlockIdX),
+        idx if idx == 4 => Some(SpecialRegister::BlockIdY),
+        idx if idx == 5 => Some(SpecialRegister::BlockIdZ),
+        idx if idx == 6 => Some(SpecialRegister::BlockDimX),
+        idx if idx == 7 => Some(SpecialRegister::BlockDimY),
+        idx if idx == 8 => Some(SpecialRegister::BlockDimZ),
+        _ => None,
+    }
+}
+
+
 impl RegisterType {
     pub fn is_32(&self) -> bool {
         matches!(self, RegisterType::U32 | RegisterType::S32 | RegisterType::I32)
@@ -159,6 +175,7 @@ impl MemoryManager {
             bridge_registers: HashMap::new(),
         }
     }
+
 
 
     pub fn format_register(&self, reg: u32, reg_type: RegisterType) -> String {    
@@ -300,6 +317,10 @@ impl MemoryManager {
             _ => None, 
         }
     }
+
+
+
+
 
     pub fn get_special_register_name(&self, reg: SpecialRegister) -> Option<String> {
         self.special_registers.get(&reg).cloned()

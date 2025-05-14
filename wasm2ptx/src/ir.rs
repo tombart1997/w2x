@@ -1,11 +1,9 @@
 use wasmparser::Operator;
-use crate::memory::{RegisterType, SpecialRegister};
+use crate::memory::{RegisterType, SpecialRegister, map_local_to_special_register};
 #[derive(Debug, Clone)]
 pub enum WasmOperator {
     SpecialRegister {
-        reg: SpecialRegister,
-        reg_type: RegisterType,
-        local_index: u32,
+        local_index: u32
     },
     LocalGet { 
         local_index: u32, 
@@ -43,65 +41,20 @@ pub enum WasmOperator {
     Unreachable,
 }
 
-fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<SpecialRegister> {
-    if !is_kernel {
-        return None;
-    }
-    match local_index as usize {
-        idx if idx == 0 => Some(SpecialRegister::ThreadIdX),
-        idx if idx == 1 => Some(SpecialRegister::ThreadIdY),
-        idx if idx == 2 => Some(SpecialRegister::ThreadIdZ),
-        idx if idx == 3 => Some(SpecialRegister::BlockIdX),
-        idx if idx == 4 => Some(SpecialRegister::BlockIdY),
-        idx if idx == 5 => Some(SpecialRegister::BlockIdZ),
-        idx if idx == 6 => Some(SpecialRegister::BlockDimX),
-        idx if idx == 7 => Some(SpecialRegister::BlockDimY),
-        idx if idx == 8 => Some(SpecialRegister::BlockDimZ),
-        _ => None,
-    }
-}
 
-pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], first_data_param: usize, is_kernel: bool) -> WasmOperator {
+pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], first_data_param: usize) -> WasmOperator {
     match op {
-        Operator::LocalGet { local_index } => {
-            let local_index = *local_index;
-            let reg_type = get_variable_type(local_index, all_variables);
-        
-            if is_kernel {
-                if let Some(special_reg) = map_local_to_special_register(local_index, is_kernel) {
-                    return WasmOperator::SpecialRegister {
-                        local_index: local_index,
-                        reg: special_reg,
-                        reg_type: RegisterType::Special(special_reg),
-                    };
-                }
-            }
-            WasmOperator::LocalGet {
-                local_index,
-                reg_type,
-            }
-        }
+        Operator::LocalGet { local_index } => WasmOperator::LocalGet {
+            local_index: *local_index,
+            reg_type: get_variable_type(*local_index, all_variables)
+        },
         Operator::LocalSet { local_index } => WasmOperator::LocalSet {
             local_index: *local_index,
             reg_type: get_variable_type(*local_index, all_variables)
         },
-        Operator::LocalTee { local_index } => {
-            let local_index = *local_index;
-            let reg_type = get_variable_type(local_index, all_variables);
-        
-            if is_kernel {
-                if let Some(special_reg) = map_local_to_special_register(local_index, is_kernel) {
-                    return WasmOperator::SpecialRegister {
-                        local_index,
-                        reg: special_reg,
-                        reg_type: RegisterType::Special(special_reg),
-                    };
-                }
-            }
-            WasmOperator::LocalTee {
-                local_index,
-                reg_type,
-            }
+        Operator::LocalTee { local_index } => WasmOperator::LocalTee {
+            local_index: *local_index,
+            reg_type: get_variable_type(*local_index, all_variables)
         },
         Operator::I32Const { value } => WasmOperator::I32Const { 
             value: *value, 

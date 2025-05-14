@@ -8,11 +8,43 @@ pub fn handle_i32_mul(
     stack: &mut Stack,
     entry_point: &mut PTXEntryPoint,
 ) { 
-    let (right, right_type) = stack.pop().expect("Stack underflow during I32Mul");
-    let (left, left_type) = stack.pop().expect("Stack underflow during I32Mul");
+    let (right, mut right_type) = stack.pop().expect("Stack underflow during I32Mul");
+    let (left, mut left_type) = stack.pop().expect("Stack underflow during I32Mul");
 
     let use_u64 = right_type == RegisterType::U64 || left_type == RegisterType::U64;
 
+    // If operand is a special register, move it to a general-purpose register first
+    let (right, right_type) = if right_type.is_special() {
+        let (tmp_reg, tmp_type) = memory_manager.new_register(RegisterType::U32)
+            .expect("Failed to allocate temp register for special right operand");
+        let formatted_tmp = memory_manager.format_register(tmp_reg, tmp_type);
+        let formatted_special = memory_manager.format_register(right, right_type);
+        entry_point.add_instruction(PTXInstruction::Mov {
+            data_type: ".u32".to_string(),
+            destination: formatted_tmp.clone(),
+            source: formatted_special,
+        });
+        (tmp_reg, RegisterType::U32)
+    } else {
+        (right, right_type)
+    };
+
+    let (left, left_type) = if left_type.is_special() {
+        let (tmp_reg, tmp_type) = memory_manager.new_register(RegisterType::U32)
+            .expect("Failed to allocate temp register for special left operand");
+        let formatted_tmp = memory_manager.format_register(tmp_reg, tmp_type);
+        let formatted_special = memory_manager.format_register(left, left_type);
+        entry_point.add_instruction(PTXInstruction::Mov {
+            data_type: ".u32".to_string(),
+            destination: formatted_tmp.clone(),
+            source: formatted_special,
+        });
+        (tmp_reg, RegisterType::U32)
+    } else {
+        (left, left_type)
+    };
+
+    // Handle upcasting if needed
     let (right, right_type) = if use_u64 && right_type != RegisterType::U64 {
         convert_register(entry_point, memory_manager, right, right_type, RegisterType::U64)
     } else if !use_u64 && right_type != RegisterType::U32 {

@@ -9,47 +9,77 @@ pub fn handle_i32_add(
     stack: &mut Stack,
     entry_point: &mut PTXEntryPoint,
 ) { 
-    let (right, right_type) = stack.pop().expect("Stack underflow during I32Add");
-    let (left, left_type) = stack.pop().expect("Stack underflow during I32Add");
+    let (right, mut right_type) = stack.pop().expect("Stack underflow during I32Add");
+    let (left, mut left_type) = stack.pop().expect("Stack underflow during I32Add");
 
-    let requires_u64 = right_type.is_64() || left_type.is_64();
-    let is_signed = right_type.is_signed() || left_type.is_signed();
+    let use_u64 = right_type == RegisterType::U64 || left_type == RegisterType::U64;
+    let use_signed = right_type.is_signed() || left_type.is_signed();
 
-    let (right, right_type) = if requires_u64 && !right_type.is_64() {
-        let target_type = if right_type.is_signed() { RegisterType::S64 } else { RegisterType::U64 };
-        convert_register(entry_point, memory_manager, right, right_type, target_type)
+    // If operand is a special register, move it to a general-purpose register first
+    let (right, right_type) = if right_type.is_special() {
+        let (tmp_reg, tmp_type) = memory_manager.new_register(RegisterType::U32)
+            .expect("Failed to allocate temp register for special right operand");
+        let formatted_tmp = memory_manager.format_register(tmp_reg, tmp_type);
+        let formatted_special = memory_manager.format_register(right, right_type);
+        entry_point.add_instruction(PTXInstruction::Mov {
+            data_type: ".u32".to_string(),
+            destination: formatted_tmp.clone(),
+            source: formatted_special,
+        });
+        (tmp_reg, RegisterType::U32)
     } else {
         (right, right_type)
     };
-    let (left, left_type) = if requires_u64 && !left_type.is_64() {
-        let target_type = if left_type.is_signed() { RegisterType::S64 } else { RegisterType::U64 };
-        convert_register(entry_point, memory_manager, left, left_type, target_type)
+
+    let (left, left_type) = if left_type.is_special() {
+        let (tmp_reg, tmp_type) = memory_manager.new_register(RegisterType::U32)
+            .expect("Failed to allocate temp register for special left operand");
+        let formatted_tmp = memory_manager.format_register(tmp_reg, tmp_type);
+        let formatted_special = memory_manager.format_register(left, left_type);
+        entry_point.add_instruction(PTXInstruction::Mov {
+            data_type: ".u32".to_string(),
+            destination: formatted_tmp.clone(),
+            source: formatted_special,
+        });
+        (tmp_reg, RegisterType::U32)
     } else {
         (left, left_type)
     };
 
-    let result_type = if requires_u64 {
-        if is_signed { RegisterType::S64 } else { RegisterType::U64 }
+    // Handle upcasting if needed
+    let (right, right_type) = if use_u64 && right_type != RegisterType::U64 {
+        convert_register(entry_point, memory_manager, right, right_type, RegisterType::U64)
+    } else if !use_u64 && right_type != RegisterType::U32 {
+        convert_register(entry_point, memory_manager, right, right_type, RegisterType::U32)
     } else {
-        if is_signed { RegisterType::S32 } else { RegisterType::U32 }
-    };
-    let data_type = match result_type {
-        RegisterType::S64 => ".s64",
-        RegisterType::U64 => ".u64",
-        RegisterType::S32 => ".s32",
-        RegisterType::U32 => ".u32",
-        _ => panic!("Unsupported type for add"),
+        (right, right_type)
     };
 
+    let (left, left_type) = if use_u64 && left_type != RegisterType::U64 {
+        convert_register(entry_point, memory_manager, left, left_type, RegisterType::U64)
+    } else if !use_u64 && left_type != RegisterType::U32 {
+        convert_register(entry_point, memory_manager, left, left_type, RegisterType::U32)
+    } else {
+        (left, left_type)
+    };
+
+    let result_type = if use_u64 { RegisterType::U64 } else { RegisterType::U32 };
     let (result_reg, reg_type) = memory_manager
         .new_register(result_type)
         .expect("Failed to allocate register for I32Add result");
+    let formatted_result = memory_manager.format_register(result_reg, reg_type);
+
+    let data_type = if use_signed {
+        if use_u64 { ".s64" } else { ".s32" }
+    } else {
+        if use_u64 { ".u64" } else { ".u32" }
+    };
 
     entry_point.add_instruction(PTXInstruction::Add {
         data_type: data_type.to_string(),
-        destination: memory_manager.format_register(result_reg, reg_type),
-        operand1: memory_manager.format_register(left, left_type),
-        operand2: memory_manager.format_register(right, right_type),
+        destination: formatted_result.clone(),
+        operand1: memory_manager.format_register(left, reg_type),
+        operand2: memory_manager.format_register(right, reg_type),
     });
     stack.push(result_reg, reg_type);
 }
