@@ -1,9 +1,11 @@
 use wasmparser::Operator;
-use crate::memory::{RegisterType, SpecialRegister, map_local_to_special_register};
+use crate::memory::{RegisterType, SpecialRegister};
 #[derive(Debug, Clone)]
 pub enum WasmOperator {
     SpecialRegister {
-        local_index: u32
+        reg: SpecialRegister,
+        reg_type: RegisterType,
+        local_index: u32,
     },
     LocalGet { 
         local_index: u32, 
@@ -18,16 +20,16 @@ pub enum WasmOperator {
         reg_type: RegisterType 
     },
     I32Add,
-    I32Sub,
     I32And,
     I32Eq,
     I32Eqz,
     I32Ne,
     I32LtU,
-    I32GtU,
     I32Const { value: i32, reg_type: RegisterType },
+    I32Sub,
     I32Mul,
     I32GeU,
+    I32GtU,
     I32Shl,
     I32Store { reg_type: RegisterType },
     I32Load { reg_type: RegisterType },
@@ -41,17 +43,49 @@ pub enum WasmOperator {
     Unreachable,
 }
 
+fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<SpecialRegister> {
+    if !is_kernel {
+        return None;
+    }
+    match local_index as usize {
+        idx if idx == 0 => Some(SpecialRegister::ThreadIdX),
+        idx if idx == 1 => Some(SpecialRegister::ThreadIdY),
+        idx if idx == 2 => Some(SpecialRegister::ThreadIdZ),
+        idx if idx == 3 => Some(SpecialRegister::BlockIdX),
+        idx if idx == 4 => Some(SpecialRegister::BlockIdY),
+        idx if idx == 5 => Some(SpecialRegister::BlockIdZ),
+        idx if idx == 6 => Some(SpecialRegister::BlockDimX),
+        idx if idx == 7 => Some(SpecialRegister::BlockDimY),
+        idx if idx == 8 => Some(SpecialRegister::BlockDimZ),
+        _ => None,
+    }
+}
 
-pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], first_data_param: usize) -> WasmOperator {
+pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], first_data_param: usize, is_kernel: bool) -> WasmOperator {
     match op {
-        Operator::LocalGet { local_index } => WasmOperator::LocalGet {
-            local_index: *local_index,
-            reg_type: get_variable_type(*local_index, all_variables)
-        },
+        Operator::LocalGet { local_index } => {
+            let local_index = *local_index;
+            let reg_type = get_variable_type(local_index, all_variables);
+        
+            if is_kernel {
+                if let Some(special_reg) = map_local_to_special_register(local_index, is_kernel) {
+                    return WasmOperator::SpecialRegister {
+                        local_index: local_index,
+                        reg: special_reg,
+                        reg_type: RegisterType::Special(special_reg),
+                    };
+                }
+            }
+            WasmOperator::LocalGet {
+                local_index,
+                reg_type,
+            }
+        }
         Operator::LocalSet { local_index } => WasmOperator::LocalSet {
             local_index: *local_index,
             reg_type: get_variable_type(*local_index, all_variables)
         },
+        
         Operator::LocalTee { local_index } => WasmOperator::LocalTee {
             local_index: *local_index,
             reg_type: get_variable_type(*local_index, all_variables)
@@ -67,8 +101,8 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
         Operator::I32Sub => WasmOperator::I32Sub,
         Operator::I32Mul => WasmOperator::I32Mul,
         Operator::I32LtU => WasmOperator::I32LtU,
-        Operator::I32GtU => WasmOperator::I32GtU,
         Operator::I32GeU => WasmOperator::I32GeU,
+        Operator::I32GtU => WasmOperator::I32GtU,
         Operator::I32Shl => WasmOperator::I32Shl,
         Operator::I32Ne => WasmOperator::I32Ne,   
         Operator::I32Store { memarg: _ } => WasmOperator::I32Store { 
@@ -78,7 +112,7 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
             reg_type: RegisterType::U32 
         },
         Operator::BrIf { relative_depth } => WasmOperator::BrIf { relative_depth: *relative_depth },
-        Operator::If { .. } => {
+                Operator::If { .. } => {
             static mut BLOCK_COUNTER: usize = 0;
             unsafe {
                 BLOCK_COUNTER += 1;

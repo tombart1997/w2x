@@ -86,7 +86,7 @@ fn main() {
         if kernel_info.is_kernel {
             let ops_converted: Vec<WasmOperator> = ops
             .iter()
-            .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), kernel_info.first_data_param))
+            .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), kernel_info.first_data_param, true))
             .collect();
             let entry_point = translator::translate_to_ptx(&ops_converted, &kernel_info, params.len(), locals.len(), &mut ptx_module);
             ptx_module.add_entry_point(entry_point);

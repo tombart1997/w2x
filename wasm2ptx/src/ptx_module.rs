@@ -66,16 +66,23 @@ impl ToString for PTXEntryPoint {
             if i > 0 {
                 result.push_str(",\n");
             }
-            result.push_str(&format!("    .param {} {}", param.data_type, param.name));
+            result.push_str(&format!("\t.param {} {}", param.data_type, param.name));
         }
         result.push_str("\n) {\n");
         for declaration in &self.register_declarations {
-            result.push_str(&format!("    {}\n", declaration.to_string()));
+            result.push_str(&format!("\t{}\n", declaration.to_string()));
         }
         for instruction in &self.body {
-            result.push_str(&format!("    {}\n", instruction.to_string()));
+            // Only indent if not a label
+            match instruction {
+                PTXInstruction::Label { .. } => {
+                    result.push_str(&format!("{}\n", instruction.to_string()));
+                }
+                _ => {
+                    result.push_str(&format!("\t{}\n", instruction.to_string()));
+                }
+            }
         }
-
         result.push_str("}\n");
         result
     }

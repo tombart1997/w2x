@@ -24,11 +24,8 @@ pub fn handle_local_set(
     let (val, val_type) = stack.pop().expect("Stack underflow during LocalSet");
     match index_type {
         IndexType::SpecialRegister(idx) => {
-            // Get or create the bridge register for this special index
             if let Some((bridge_reg, bridge_type)) 
                 = memory_manager.get_or_create_bridge_register(idx as usize, val_type) {
-                // Add the mov instruction to move the stack value into the bridge register
-                            // Convert value to bridge_type if needed
                 let (converted_val, converted_type) = if val_type != bridge_type {
                     convert_register(entry_point, memory_manager, val, val_type, bridge_type)
                 } else {
