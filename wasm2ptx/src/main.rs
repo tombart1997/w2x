@@ -9,6 +9,8 @@ mod operators;
 mod utils;
 use wasmparser::{Parser, Payload, Operator, ExternalKind, TypeRef, ValType, CompositeType};
 use std::fs;
+use std::path::{Path, PathBuf};
+use std::io;
 use crate::ir::{WasmOperator, convert_wasm_operator};
 use crate::kernel_detector::detect_kernel;  
 use crate::ptx_module::PTXModule;
@@ -16,16 +18,51 @@ use crate::label_context::{LabelContext, LabelKind, LabelFrame};
 
 fn main() {
     env_logger::init();
-    let wasm_bytes = fs::read("test/go.wasm").expect("Failed to read input.wasm");
-    let mut ptx_module = PTXModule::new(".version 8.0".to_string(), ".target sm_80".to_string());
+    
+    // Directory to search for WASM files (current directory)
+    let search_dir = "./test";
+    
+    match process_wasm_files(search_dir) {
+        Ok(_) => println!("Successfully processed all WASM files"),
+        Err(e) => eprintln!("Error processing WASM files: {}", e),
+    }
+}
+
+fn process_wasm_files(dir: &str) -> io::Result<()> {
+    // Get all entries in the directory
+    let entries = fs::read_dir(dir)?;
+    
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        
+        // Check if it's a file with .wasm extension
+        if path.is_file() && path.extension().map_or(false, |ext| ext == "wasm") {
+            // Create output directory based on filename without extension
+            let filename = path.file_stem().unwrap().to_str().unwrap();
+            let output_dir = Path::new(dir).join(filename);
+            fs::create_dir_all(&output_dir)?;
+            
+            // Process the WASM file
+            process_single_wasm_file(&path, &output_dir)?;
+        }
+    }
+    
+    Ok(())
+}
+
+fn process_single_wasm_file(wasm_path: &Path, output_dir: &Path) -> io::Result<()> {
+    // Read WASM file
+    let wasm_bytes = fs::read(wasm_path)?;
+    
+    // Parse WASM and extract kernels
     let parser = Parser::new(0);
-    let mut ptx_code = String::new();
-    ptx_code.push_str(".version 8.0\n.target sm_80\n\n");
     let mut exported_funcs = Vec::new();
     let mut func_bodies = Vec::new();
     let mut func_index_offset = 0;
     let mut function_signatures: Vec<Vec<ValType>> = Vec::new();
     let mut func_type_map: Vec<usize> = Vec::new();
+    
     for payload in parser.parse_all(&wasm_bytes) {
         match payload.expect("Failed parsing payload") 
         {
@@ -72,6 +109,8 @@ fn main() {
         _ => {}
         }
     }
+    
+    // Process each kernel
     for (export_idx, kernel_name) in exported_funcs {
         let body_idx = export_idx - func_index_offset;
         let ops = &func_bodies[body_idx as usize];
@@ -83,19 +122,28 @@ fn main() {
         );
         let all_variables = [params.clone(), locals.clone()].concat();
         let kernel_info = detect_kernel(&kernel_name);
+        
         if kernel_info.is_kernel {
+            // For each kernel, create a new PTX module
+            let mut ptx_module = PTXModule::new(".version 8.0".to_string(), ".target sm_80".to_string());
+            
             let ops_converted: Vec<WasmOperator> = ops
-            .iter()
-            .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), kernel_info.first_data_param, true))
-            .collect();
+                .iter()
+                .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), kernel_info.first_data_param, true))
+                .collect();
+                
             let entry_point = translator::translate_to_ptx(&ops_converted, &kernel_info, params.len(), locals.len(), &mut ptx_module);
             ptx_module.add_entry_point(entry_point);
-        } else {
-            println!("Skipping non-kernel function: {}", kernel_name);
+            
+            // Generate PTX code and write to file
+            let ptx_code = ptx_module.generate_ptx_string();
+            let ptx_filename = format!("{}.ptx", kernel_name);
+            let ptx_path = output_dir.join(ptx_filename);
+            fs::write(&ptx_path, ptx_code)?;
         }
     }
-    let ptx_code = ptx_module.generate_ptx_string();
-    fs::write("output.ptx", ptx_code).expect("Failed writing PTX");
+    
+    Ok(())
 }
 
 fn extract_function_params(

@@ -1,0 +1,71 @@
+.version 8.0
+.target sm_80
+.visible .entry vector_add_loop_kernel(
+	.param .u64 param9,
+	.param .u64 param10,
+	.param .u64 param11,
+	.param .u64 param12
+) {
+	.reg .u32 %r32, %r13, %r22, %r18, %r1, %r15, %r31, %r7, %r17, %r20, %r28, %r34, %r21, %r8, %r4, %r33, %r2, %r14, %r0, %r19, %r3, %r16;
+	.reg .u64 %rd29, %rd5, %rd25, %rd12, %rd26, %rd35, %rd10, %rd11, %rd9, %rd24, %rd30, %rd27;
+	.reg .pred %p36, %p23, %p6;
+vector_add_loop_kernel_start:
+	ld.param.u64 %rd9, [param9];
+	ld.param.u64 %rd10, [param10];
+	ld.param.u64 %rd11, [param11];
+	ld.param.u64 %rd12, [param12];
+block_3_start:
+block_4_start:
+	mov.u32 %r0, %ctaid.x;
+	mov.u32 %r1, %ntid.x;
+	mul.lo.s32 %r2, %r0, %r1;
+	mov.u32 %r3, %tid.x;
+	add.u32 %r4, %r2, %r3;
+	mov.u32 %r3, %r4;
+	cvt.u64.u32 %rd5, %r4;
+	setp.gt.u64 %p6, %rd12, %rd5;
+	@!%p6 bra if_2_end;
+if_2_start:
+	mov.u32 %r7, %ntid.y;
+	mul.lo.s32 %r8, %r1, %r7;
+	mov.u32 %r13, %ntid.z;
+	mul.lo.s32 %r14, %r8, %r13;
+	mov.u32 %r15, %r14;
+	mov.u32 %r16, 2;
+	shl.b32 %r17, %r3, %r16;
+	mov.u32 %r0, %r17;
+	mul.lo.s32 %r18, %r7, %r13;
+	mul.lo.s32 %r19, %r18, %r1;
+	mov.u32 %r20, 2;
+	shl.b32 %r21, %r19, %r20;
+	mov.u32 %r1, %r21;
+loop_0_start:
+	mov.u32 %r22, 1073741823;
+	setp.gt.u32 %p23, %r3, %r22;
+	@%p23 bra block_4_end;
+	cvt.u64.u32 %rd24, %r0;
+	add.u64 %rd25, %rd24, %rd11;
+	cvt.u64.u32 %rd26, %r0;
+	add.u64 %rd27, %rd26, %rd10;
+	ld.global.u32 %r28, [%rd27];
+	cvt.u64.u32 %rd29, %r0;
+	add.u64 %rd30, %rd29, %rd9;
+	ld.global.u32 %r31, [%rd30];
+	add.u32 %r32, %r28, %r31;
+	st.global.u32 [%rd25], %r32;
+	add.u32 %r33, %r0, %r1;
+	mov.u32 %r0, %r33;
+	add.u32 %r34, %r3, %r15;
+	mov.u32 %r3, %r34;
+	cvt.u64.u32 %rd35, %r34;
+	setp.lt.u64 %p36, %rd35, %rd12;
+	@%p36 bra loop_0_start;
+loop_0_end:
+if_2_end:
+	bra block_3_end;
+block_4_end:
+	trap;
+block_3_end:
+vector_add_loop_kernel_end:
+}
+

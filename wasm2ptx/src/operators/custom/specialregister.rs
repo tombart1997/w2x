@@ -26,7 +26,6 @@ pub fn handle_special_register(
                 destination: formatted_bridge_reg.clone(),
                 source: formatted_special_reg.clone(),
             });
-            println!("Special Register Mov Types: {:?} -> {:?}", formatted_bridge_reg.clone(), formatted_special_reg.clone());
             stack.push(new_bridge_reg, new_bridge_type);
         } else {
             panic!("Failed to get or create bridge register for special index {}", local_index);

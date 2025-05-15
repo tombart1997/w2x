@@ -32,7 +32,6 @@ pub fn handle_local_get(
                             destination: formatted_reg.clone(),
                             source: ptx_var.clone(),
                         });
-                        println!("Local Get KP Mov Types: {:?} -> {:?}", formatted_reg.clone(), ptx_var.clone());
                         stack.push(result_reg, reg_type_out);
                     }
                 }

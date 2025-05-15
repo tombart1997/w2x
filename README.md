@@ -22,6 +22,20 @@ export function as C function and make sure function name ends with _kernel
 `wasm2wat ./target/wasm32-unknown-unknown/release/*yourfile.wasm* -o ./target/wasm32-unknown-unknown/release/*yourfile.wat*`
 
 
+
+## GO 2 WASM
+**Step 1 Install Go**
+
+**Step 2 Install tinygo**
+
+wget https://github.com/tinygo-org/tinygo/releases/download/v0.37.0/tinygo_0.37.0_amd64.deb
+sudo dpkg -i tinygo_0.37.0_amd64.deb
+
+**Step 3 build binary with tinygo and minimal compiler settings**
+
+cd go2wasm/
+tinygo build -o main.wasm -target=wasm -opt=2 --no-debug --scheduler=none -buildmode=c-shared -panic=trap
+
 ## WASM 2 PTX
 
 ```

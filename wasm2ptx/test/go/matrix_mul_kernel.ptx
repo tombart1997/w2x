@@ -1,0 +1,127 @@
+.version 8.0
+.target sm_80
+.visible .entry matrix_mul_kernel(
+	.param .u64 param9,
+	.param .u64 param10,
+	.param .u64 param11,
+	.param .u64 param12,
+	.param .u64 param13,
+	.param .u64 param14
+) {
+	.reg .u32 %r4, %r25, %r31, %r64, %r15, %r16, %r43, %r32, %r56, %r17, %r49, %r72, %r2, %r57, %r52, %r5, %r55, %r0, %r21, %r45, %r60, %r78, %r18, %r3, %r75, %r8, %r23, %r1, %r39;
+	.reg .u64 %rd62, %rd26, %rd53, %rd76, %rd40, %rd10, %rd35, %rd33, %rd69, %rd59, %rd11, %rd19, %rd36, %rd24, %rd34, %rd71, %rd42, %rd38, %rd50, %rd68, %rd54, %rd29, %rd27, %rd30, %rd13, %rd73, %rd70, %rd37, %rd46, %rd77, %rd58, %rd28, %rd41, %rd61, %rd12, %rd44, %rd65, %rd14, %rd63, %rd6, %rd9, %rd48, %rd66;
+	.reg .pred %p74, %p67, %p20, %p47, %p51, %p22, %p7;
+matrix_mul_kernel_start:
+	ld.param.u64 %rd9, [param9];
+	ld.param.u64 %rd10, [param10];
+	ld.param.u64 %rd11, [param11];
+	ld.param.u64 %rd12, [param12];
+	ld.param.u64 %rd13, [param13];
+	ld.param.u64 %rd14, [param14];
+block_5_start:
+	mov.u32 %r0, %ctaid.y;
+	mov.u32 %r1, %ntid.y;
+	mul.lo.s32 %r2, %r0, %r1;
+	mov.u32 %r3, %tid.y;
+	add.u32 %r4, %r2, %r3;
+	mov.u32 %r5, %r4;
+	cvt.u64.u32 %rd6, %r4;
+	setp.ge.u64 %p7, %rd6, %rd12;
+	@%p7 bra block_5_end;
+	mov.u32 %r8, %ctaid.x;
+	mov.u32 %r15, %ntid.x;
+	mul.lo.s32 %r16, %r8, %r15;
+	mov.u32 %r17, %tid.x;
+	add.u32 %r18, %r16, %r17;
+	mov.u32 %r17, %r18;
+	cvt.u64.u32 %rd19, %r18;
+	setp.ge.u64 %p20, %rd19, %rd14;
+	@%p20 bra block_5_end;
+block_6_start:
+block_7_start:
+	cvt.u32.u64 %r21, %rd13;
+	setp.eq.u32 %p22, %r21, 0;
+	@!%p22 bra if_3_end;
+if_3_start:
+	mov.u32 %r23, 0;
+	cvt.u64.u32 %rd24, %r23;
+	mov.u64 %rd12, %rd24;
+	bra block_7_end;
+if_3_end:
+	mov.u32 %r25, 2;
+	shl.b64 %rd26, %rd14, %r25;
+	mov.u64 %rd27, %rd26;
+	cvt.u64.u32 %rd28, %r17;
+	sub.u64 %rd29, %rd28, %rd14;
+	mov.u64 %rd30, %rd29;
+	mov.u32 %r31, 2;
+	shl.b32 %r32, %r17, %r31;
+	cvt.u64.u32 %rd33, %r32;
+	add.u64 %rd34, %rd10, %rd33;
+	mov.u64 %rd35, %rd34;
+	cvt.u64.u32 %rd36, %r5;
+	mul.lo.s64 %rd37, %rd36, %rd13;
+	mov.u64 %rd38, %rd37;
+	mov.u32 %r39, 2;
+	shl.b64 %rd40, %rd37, %r39;
+	add.u64 %rd41, %rd9, %rd40;
+	mov.u64 %rd42, %rd41;
+	mov.u32 %r43, 0;
+	cvt.u64.u32 %rd44, %r43;
+	mov.u64 %rd12, %rd44;
+loop_0_start:
+	mov.u32 %r45, 1073741823;
+	cvt.u64.u32 %rd46, %r45;
+	setp.gt.u64 %p47, %rd38, %rd46;
+	@%p47 bra block_6_end;
+	add.u64 %rd48, %rd30, %rd14;
+	mov.u64 %rd30, %rd48;
+	mov.u32 %r49, 1073741823;
+	cvt.u64.u32 %rd50, %r49;
+	setp.gt.u64 %p51, %rd48, %rd50;
+	@%p51 bra block_6_end;
+	mov.u32 %r52, 1;
+	cvt.u64.u32 %rd53, %r52;
+	add.u64 %rd54, %rd38, %rd53;
+	mov.u64 %rd38, %rd54;
+	ld.global.u32 %r55, [%rd35];
+	ld.global.u32 %r56, [%rd42];
+	mul.lo.s32 %r57, %r55, %r56;
+	cvt.u64.u32 %rd58, %r57;
+	add.u64 %rd59, %rd58, %rd12;
+	mov.u64 %rd12, %rd59;
+	mov.u32 %r60, 4;
+	cvt.u64.u32 %rd61, %r60;
+	add.u64 %rd62, %rd42, %rd61;
+	mov.u64 %rd42, %rd62;
+	add.u64 %rd63, %rd27, %rd35;
+	mov.u64 %rd35, %rd63;
+	mov.u32 %r64, 1;
+	cvt.u64.u32 %rd65, %r64;
+	sub.u64 %rd66, %rd13, %rd65;
+	mov.u64 %rd13, %rd66;
+	setp.ne.u64 %p67, %rd66, 0;
+	@%p67 bra loop_0_start;
+loop_0_end:
+block_7_end:
+	cvt.u64.u32 %rd68, %r5;
+	mul.lo.s64 %rd69, %rd68, %rd14;
+	cvt.u64.u32 %rd70, %r17;
+	add.u64 %rd71, %rd69, %rd70;
+	mov.u64 %rd38, %rd71;
+	mov.u32 %r72, 1073741823;
+	cvt.u64.u32 %rd73, %r72;
+	setp.gt.u64 %p74, %rd71, %rd73;
+	@%p74 bra block_6_end;
+	mov.u32 %r75, 2;
+	shl.b64 %rd76, %rd38, %r75;
+	add.u64 %rd77, %rd11, %rd76;
+	cvt.u32.u64 %r78, %rd12;
+	st.global.u32 [%rd77], %r78;
+	bra block_5_end;
+block_6_end:
+	trap;
+block_5_end:
+matrix_mul_kernel_end:
+}
+
