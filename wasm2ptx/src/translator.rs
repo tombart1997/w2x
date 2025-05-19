@@ -2,7 +2,6 @@ use super::ir::WasmOperator;
 use super::memory::MemoryManager;
 use super::stack::Stack;
 use crate::memory::RegisterType;
-use crate::operators::local;
 use crate::ptx_module::PTXModule;
 use super::ptx_module::{PTXEntryPoint, PTXParameter, PTXInstruction};
 use super::label_context::{LabelContext, LabelKind, LabelFrame};
@@ -32,7 +31,7 @@ pub fn translate_to_ptx(
     entry_point.add_instruction(PTXInstruction::Label { name: func_start });
     if kernel_info.is_kernel {
         for i in kernel_info.first_data_param..(param_count) {
-            if let Some((result_reg, reg_type)) = memory_manager.assign_parameter_register(  i, RegisterType::U64) {
+            if let Some((_, reg_type)) = memory_manager.assign_parameter_register(  i, RegisterType::U64) {
                 let formatted_result = memory_manager.format_register(i as u32, reg_type);
                 entry_point.add_instruction(PTXInstruction::ParamLoad {
                     param_index:  i as usize,
@@ -113,7 +112,6 @@ fn translate_to_ptx_instruction(
                 *local_index,
                 kernel_info,
                 param_count,
-                local_count,
                 memory_manager,
                 stack,
                 entry_point,

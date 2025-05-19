@@ -9,15 +9,12 @@ mod operators;
 mod utils;
 use wasmparser::{Parser, Payload, Operator, ExternalKind, TypeRef, ValType, CompositeType};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::io;
-use serde_json::{Value, from_str};
-use std::collections::HashMap;
 use std::str;
 use crate::ir::{WasmOperator, convert_wasm_operator};
 use crate::kernel_detector::detect_kernel;  
 use crate::ptx_module::PTXModule;
-use crate::label_context::{LabelContext, LabelKind, LabelFrame};
 
 fn main() {
     env_logger::init();
@@ -54,9 +51,6 @@ fn process_single_wasm_file(wasm_path: &Path, output_dir: &Path) -> io::Result<(
     let mut func_index_offset = 0;
     let mut function_signatures: Vec<Vec<ValType>> = Vec::new();
     let mut func_type_map: Vec<usize> = Vec::new();
-    let mut metadata_address: Option<u32> = None;
-    let mut data_sections: HashMap<u32, Vec<u8>> = HashMap::new();
-    let mut shared_memory_info = SharedMemoryInfo::new();
     for payload in parser.parse_all(&wasm_bytes) {
         match payload.expect("Failed parsing payload") 
         {
@@ -100,47 +94,9 @@ fn process_single_wasm_file(wasm_path: &Path, output_dir: &Path) -> io::Result<(
                 let ops: Vec<Operator> = operators.into_iter().collect::<Result<_, _>>().unwrap();    
                 func_bodies.push(ops);
             }
-            Payload::DataSection(reader) => {
-                for data_entry in reader {
-                    if let Ok(data) = data_entry {
-                        // Handle only passive and active data with memory 0
-                        match data.kind {
-                            wasmparser::DataKind::Active { memory_index: 0, init_expr } => {
-                                let mut reader = init_expr.get_binary_reader();
-                                if let Ok(Operator::I32Const { value }) = reader.read() {
-                                    // Store data section content by address
-                                    data_sections.insert(value as u32, data.data.to_vec());
-                                }
-                            },
-                            _ => {}
-                        }
-                    }
-                }
-            },
         _ => {}
         }
     }
-    // First pass: find the metadata function address
-    for (export_idx, function_name) in &exported_funcs {
-        if function_name == "__shared_mem_metadata" {
-            let body_idx = export_idx - func_index_offset;
-            let ops = &func_bodies[body_idx as usize];
-            
-            // Extract the return value (metadata address) from the function
-            for op in ops {
-                if let Operator::I32Const { value } = op {
-                    metadata_address = Some(*value as u32);
-                    break;
-                }
-            }
-            break;
-        }
-    }
-    
-   shared_memory_info =  parse_shared_memory_metadata(metadata_address, &data_sections);
-
-
-
     for (export_idx, function_name) in exported_funcs {
         let body_idx = export_idx - func_index_offset;
         let ops = &func_bodies[body_idx as usize];
@@ -158,7 +114,7 @@ fn process_single_wasm_file(wasm_path: &Path, output_dir: &Path) -> io::Result<(
             
             let ops_converted: Vec<WasmOperator> = ops
                 .iter()
-                .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), kernel_info.first_data_param, true))
+                .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), true))
                 .collect();
                 
             let entry_point = translator::translate_to_ptx(&ops_converted, &kernel_info, params.len(), locals.len(), &mut ptx_module);
@@ -174,53 +130,6 @@ fn process_single_wasm_file(wasm_path: &Path, output_dir: &Path) -> io::Result<(
 }
 
 
-fn parse_shared_memory_metadata(metadata_address: Option<u32>, data_sections: &HashMap<u32, Vec<u8>>, shared_memory_info: SharedMemoryInfo ) -> SharedMemoryInfo {
-
-    // Second pass: parse the metadata if found
-    if let Some(address) = metadata_address {
-        if let Some(data) = data_sections.get(&address) {
-            // Convert raw bytes to string, handling null termination
-            let metadata_str = match data.iter().position(|&b| b == 0) {
-                Some(pos) => str::from_utf8(&data[0..pos]),
-                None => str::from_utf8(data),
-            };
-            
-            if let Ok(json_str) = metadata_str {
-                if let Ok(json) = from_str::<Value>(json_str) {
-                    // Parse the kernel metadata
-                    if let Some(kernels) = json.get("kernels").and_then(|k| k.as_array()) {
-                        for kernel in kernels {
-                            let kernel_name = kernel.get("name")
-                                .and_then(|n| n.as_str())
-                                .unwrap_or_default()
-                                .to_string();
-                                
-                            if let Some(shared_mem) = kernel.get("shared_memory").and_then(|s| s.as_array()) {
-                                let mut regions = Vec::new();
-                                
-                                for region in shared_mem {
-                                    if let (Some(name), Some(size), Some(offset)) = (
-                                        region.get("name").and_then(|n| n.as_str()),
-                                        region.get("size").and_then(|s| s.as_u64()),
-                                        region.get("offset").and_then(|o| o.as_u64())
-                                    ) {
-                                        regions.push(SharedMemoryRegion {
-                                            name: name.to_string(),
-                                            size: size as usize,
-                                            offset: offset as u32,
-                                        });
-                                    }
-                                }
-                                shared_memory_info.kernel_to_regions.insert(kernel_name, regions);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    shared_memory_info
-}
 
 
 fn extract_function_params(
@@ -275,36 +184,3 @@ fn extract_all_variables(
 
 
 
-
-// Define a struct to hold shared memory information
-#[derive(Debug, Clone)]
-struct SharedMemoryRegion {
-    name: String,
-    size: usize,
-    offset: u32,
-}
-
-#[derive(Debug, Clone)]
-struct SharedMemoryInfo {
-    kernel_to_regions: HashMap<String, Vec<SharedMemoryRegion>>,
-}
-
-impl SharedMemoryInfo {
-    fn new() -> Self {
-        SharedMemoryInfo {
-            kernel_to_regions: HashMap::new(),
-        }
-    }
-
-    fn is_shared_memory_address(&self, kernel_name: &str, address: u32) -> Option<&SharedMemoryRegion> {
-        if let Some(regions) = self.kernel_to_regions.get(kernel_name) {
-            for region in regions {
-                let end_offset = region.offset + (region.size * 4) as u32;
-                if address >= region.offset && address < end_offset {
-                    return Some(region);
-                }
-            }
-        }
-        None
-    }
-}

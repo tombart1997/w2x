@@ -10,7 +10,7 @@ pub fn handle_special_register(
     entry_point: &mut PTXEntryPoint,
     reg_type: &RegisterType,
 ) { 
-    if let Some((bridge_reg, bridge_type)) = memory_manager.get_bridge_register(local_index as usize, RegisterType::U32) {
+    if let Some((bridge_reg, bridge_type)) = memory_manager.get_bridge_register(local_index as usize) {
         // If found, push it onto the stack
         stack.push(bridge_reg, bridge_type);
     }  else {

@@ -61,7 +61,7 @@ fn map_local_to_special_register(local_index: u32, is_kernel: bool) -> Option<Sp
     }
 }
 
-pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], first_data_param: usize, is_kernel: bool) -> WasmOperator {
+pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType], is_kernel: bool) -> WasmOperator {
     match op {
         Operator::LocalGet { local_index } => {
             let local_index = *local_index;

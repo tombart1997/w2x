@@ -1,5 +1,5 @@
 use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
-use crate::label_context::{LabelContext, LabelKind, LabelFrame};
+use crate::label_context::{LabelContext, LabelKind};
 
 pub fn handle_br(
     relative_depth: u32,

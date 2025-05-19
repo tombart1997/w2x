@@ -6,8 +6,8 @@
 	.param .u64 param11,
 	.param .u64 param12
 ) {
-	.reg .u32 %r3, %r8, %r2, %r21, %r1, %r20, %r4, %r7, %r0, %r17;
-	.reg .u64 %rd19, %rd9, %rd10, %rd13, %rd12, %rd14, %rd18, %rd16, %rd11, %rd5, %rd15;
+	.reg .u32 %r0, %r1, %r2, %r3, %r4, %r7, %r8, %r17, %r20, %r21;
+	.reg .u64 %rd5, %rd9, %rd10, %rd11, %rd12, %rd13, %rd14, %rd15, %rd16, %rd18, %rd19;
 	.reg .pred %p6;
 vector_add_kernel_start:
 	ld.param.u64 %rd9, [param9];

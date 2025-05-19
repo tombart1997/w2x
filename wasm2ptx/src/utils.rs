@@ -45,10 +45,6 @@ pub fn convert_register(
             "cvt.rzi.u64.f32 {}, {};",
             formatted_result, formatted_source
         )),
-        (RegisterType::U32, RegisterType::U64) => PTXInstruction::Other(format!(
-            "cvt.u64.u32 {}, {};", 
-            formatted_result, formatted_source
-        )),
         (RegisterType::S32, RegisterType::U64) => PTXInstruction::Other(format!(
             "cvt.u64.s32 {}, {};", 
             formatted_result, formatted_source

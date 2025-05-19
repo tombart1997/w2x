@@ -33,16 +33,9 @@ impl LabelContext {
     pub fn pop(&mut self) -> Option<LabelFrame> {
         self.label_stack.pop()
     }
-
-    pub fn top(&self) -> Option<&LabelFrame> {
-        self.label_stack.last()
-    }
     
     pub fn len(&self) -> usize {
         self.label_stack.len()
-    }
-    pub fn is_empty(&self) -> bool {
-        self.label_stack.is_empty()
     }
 
     pub fn index(&self, index: usize) -> &LabelFrame {

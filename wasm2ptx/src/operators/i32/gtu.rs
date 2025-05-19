@@ -15,7 +15,7 @@ pub fn handle_i32_gtu(
     let (left, left_type) = stack.pop().expect("Stack underflow during I32GtU");
     let use_u64 = right_type.is_64() || left_type.is_64();
     
-    let (right, right_type) = if use_u64 && right_type.is_64() == false {
+    let (right, _right_type) = if use_u64 && right_type.is_64() == false {
         convert_register(entry_point, memory_manager, right, right_type, right_type.get_64_equivalent())
     } else if !use_u64 && right_type.is_32() == false {
         convert_register(entry_point, memory_manager, right, right_type, right_type.get_32_equivalent())
@@ -23,7 +23,7 @@ pub fn handle_i32_gtu(
         (right, right_type)
     };
     
-    let (left, left_type) = if use_u64 && left_type.is_64() == false  {
+    let (left, _left_type) = if use_u64 && left_type.is_64() == false  {
         convert_register(entry_point, memory_manager, left, left_type, left_type.get_64_equivalent())
     } else if !use_u64 && left_type.is_32() == false {
         convert_register(entry_point, memory_manager, left, left_type, left_type.get_32_equivalent())

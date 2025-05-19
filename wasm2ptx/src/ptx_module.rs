@@ -168,11 +168,34 @@ impl ToString for PTXInstruction {
             PTXInstruction::RegisterDeclaration {
                 register_type,
                 registers,
-            } => format!(
-                ".reg {} {};", 
-                register_type, 
-                registers.join(", ")
-            ),
+            } => {               
+                let mut sorted_registers = registers.clone();
+                
+                // Sort by the numeric part of register names
+                sorted_registers.sort_by(|a, b| {
+                    // Extract the numeric part from each register name
+                    let a_num = a.chars()
+                        .skip_while(|c| !c.is_numeric())
+                        .collect::<String>()
+                        .parse::<usize>()
+                        .unwrap_or(0);
+                    
+                    let b_num = b.chars()
+                        .skip_while(|c| !c.is_numeric())
+                        .collect::<String>()
+                        .parse::<usize>()
+                        .unwrap_or(0);
+                    
+                    // Compare by numeric value
+                    a_num.cmp(&b_num)
+                });
+                
+                format!(
+                    ".reg {} {};", 
+                    register_type, 
+                    sorted_registers.join(", ")
+                )
+            },
             PTXInstruction::Load {
                 data_type,
                 destination,

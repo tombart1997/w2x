@@ -68,18 +68,6 @@ impl RegisterType {
     pub fn is_signed(&self) -> bool {
         matches!(self, RegisterType::S32 | RegisterType::S64 | RegisterType::I32 | RegisterType::I64)
     }
-    pub fn is_unsigned(&self) -> bool {
-        matches!(self, RegisterType::U32 | RegisterType::U64)
-    }
-    pub fn is_float(&self) -> bool {
-        matches!(self, RegisterType::F32 | RegisterType::F64)
-    }
-    pub fn is_predicate(&self) -> bool {
-        matches!(self, RegisterType::Predicate)
-    }
-    pub fn is_special(&self) -> bool {
-        matches!(self, RegisterType::Special(_))
-    }
     pub fn to_ptx_type(&self) -> &'static str {
         match self {
             RegisterType::U32 => ".u32",
@@ -179,17 +167,17 @@ impl MemoryManager {
         Some((bridge_reg, bridge_type))
     }
 
-    pub fn get_bridge_register(&self, special_index: usize, reg_type: RegisterType) -> Option<(u32, RegisterType)> {
+    pub fn get_bridge_register(&self, special_index: usize) -> Option<(u32, RegisterType)> {
         self.bridge_registers.get(&special_index).map(|(reg, type_)| (*reg, *type_))
     }
 
     pub fn get_register(&self, index_type: IndexType) -> Option<(u32, RegisterType)> {
         match index_type {
             IndexType::SpecialRegister(idx) => {
-                if let Some((bridge_reg, bridge_type)) = self.get_bridge_register(idx, RegisterType::U64) {
+                if let Some((bridge_reg, bridge_type)) = self.get_bridge_register(idx) {
                     return Some((bridge_reg, bridge_type));
                 }
-                if let Some((bridge_reg, bridge_type)) = self.get_bridge_register(idx, RegisterType::U32) {
+                if let Some((bridge_reg, bridge_type)) = self.get_bridge_register(idx) {
                     return Some((bridge_reg, bridge_type));
                 }
                 self.get_special_register_by_index(idx)

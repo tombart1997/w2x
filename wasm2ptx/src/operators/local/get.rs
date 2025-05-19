@@ -6,7 +6,6 @@ pub fn handle_local_get(
     local_index: u32,
     kernel_info: &crate::kernel_detector::KernelInfo,
     param_count: usize,
-    local_count: usize,
     memory_manager:  &mut MemoryManager,
     stack: &mut Stack,
     entry_point:  &mut PTXEntryPoint,

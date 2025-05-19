@@ -13,7 +13,7 @@ pub fn handle_i32_geu(
     
     let use_u64 = right_type == RegisterType::U64 || left_type == RegisterType::U64;
     
-    let (right, right_type) = if use_u64 && right_type != RegisterType::U64 {
+    let (right, _right_type) = if use_u64 && right_type != RegisterType::U64 {
         convert_register(entry_point, memory_manager, right, right_type, RegisterType::U64)
     } else if !use_u64 && right_type != RegisterType::U32 {
         convert_register(entry_point, memory_manager, right, right_type, RegisterType::U32)
@@ -21,7 +21,7 @@ pub fn handle_i32_geu(
         (right, right_type)
     };
     
-    let (left, left_type) = if use_u64 && left_type != RegisterType::U64 {
+    let (left, _left_type) = if use_u64 && left_type != RegisterType::U64 {
         convert_register(entry_point, memory_manager, left, left_type, RegisterType::U64)
     } else if !use_u64 && left_type != RegisterType::U32 {
         convert_register(entry_point, memory_manager, left, left_type, RegisterType::U32)

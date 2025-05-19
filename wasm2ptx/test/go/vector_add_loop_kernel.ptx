@@ -6,9 +6,9 @@
 	.param .u64 param11,
 	.param .u64 param12
 ) {
-	.reg .u32 %r13, %r8, %r16, %r21, %r17, %r20, %r22, %r19, %r34, %r7, %r3, %r14, %r0, %r4, %r2, %r31, %r15, %r18, %r28, %r33, %r32, %r1;
-	.reg .u64 %rd35, %rd26, %rd29, %rd11, %rd30, %rd9, %rd5, %rd25, %rd10, %rd12, %rd27, %rd24;
-	.reg .pred %p6, %p36, %p23;
+	.reg .u32 %r0, %r1, %r2, %r3, %r4, %r7, %r8, %r13, %r14, %r15, %r16, %r17, %r18, %r19, %r20, %r21, %r22, %r28, %r31, %r32, %r33, %r34;
+	.reg .u64 %rd5, %rd9, %rd10, %rd11, %rd12, %rd24, %rd25, %rd26, %rd27, %rd29, %rd30, %rd35;
+	.reg .pred %p6, %p23, %p36;
 vector_add_loop_kernel_start:
 	ld.param.u64 %rd9, [param9];
 	ld.param.u64 %rd10, [param10];
@@ -58,7 +58,7 @@ loop_0_start:
 	add.u32 %r34, %r3, %r15;
 	mov.u32 %r3, %r34;
 	cvt.u64.u32 %rd35, %r34;
-	setp.lt.u64 %p36, %rd35, %rd12;
+	setp.lt.u32 %p36, %rd35, %rd12;
 	@%p36 bra loop_0_start;
 loop_0_end:
 if_2_end:

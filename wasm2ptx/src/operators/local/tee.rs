@@ -1,5 +1,3 @@
-use core::convert;
-
 use crate::memory::{IndexType, MemoryManager, RegisterType};
 use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::stack::Stack;

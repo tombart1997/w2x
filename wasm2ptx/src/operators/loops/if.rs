@@ -1,8 +1,8 @@
 use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::ir::WasmOperator;
-use crate::translator::{get_nested_instructions, translate_to_ptx, translate_ops_into_entry_point};
+use crate::translator::{get_nested_instructions, translate_ops_into_entry_point};
 use crate::label_context::{LabelFrame, LabelKind, LabelContext};
-use crate::memory::{IndexType, MemoryManager, RegisterType};
+use crate::memory::{MemoryManager, RegisterType};
 use crate::stack::Stack;
 
 
@@ -24,7 +24,6 @@ pub fn handle_if(
         .expect("Stack underflow in if operator");
     
     let start_label = format!("{}_{}_start", "if", block_id);
-    let else_label = format!("{}_{}_else", "if", block_id);
     let end_label = format!("{}_{}_end", "if", block_id);
     
     ctx.push(LabelFrame { 
@@ -64,7 +63,7 @@ pub fn handle_if(
     // "If" body starts here
     entry_point.add_instruction(PTXInstruction::Label { name: start_label.clone() });
     
-    let (nested, end_idx) = get_nested_instructions(ops, current_idx + 1);
+    let (nested, _end_idx) = get_nested_instructions(ops, current_idx + 1);
     translate_ops_into_entry_point(
         &nested,
         kernel_info,

@@ -10,7 +10,7 @@ pub fn handle_i32_eqz(
     let (val, val_type) = stack.pop().expect("Stack underflow during I32Eqz");
 
     // Ensure the value is in a 32-bit register
-    let (val, val_type) = if val_type != RegisterType::U32 {
+    let (val, _val_type) = if val_type != RegisterType::U32 {
         convert_register(entry_point, memory_manager, val, val_type, RegisterType::U32)
     } else {
         (val, val_type)

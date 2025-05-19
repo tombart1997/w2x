@@ -1,4 +1,4 @@
-use crate::memory::{MemoryManager, RegisterType};
+use crate::memory::{MemoryManager};
 use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::stack::Stack;
 
