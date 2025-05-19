@@ -54,7 +54,7 @@ pub fn handle_if(
         
         formatted_pred
     };
-
+    
     // Conditional branch - skip the "if" body if predicate is false
     entry_point.add_instruction(PTXInstruction::Other(format!(
         "@!{} bra {};",

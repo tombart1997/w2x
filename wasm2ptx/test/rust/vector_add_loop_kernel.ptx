@@ -6,8 +6,8 @@
 	.param .u64 param11,
 	.param .u64 param12
 ) {
-	.reg .u32 %r2, %r1, %r17, %r28, %r3, %r15, %r5, %r13, %r7, %r30, %r27, %r6, %r4, %r0, %r8, %r14, %r16, %r24, %r29;
-	.reg .u64 %rd9, %rd18, %rd20, %rd26, %rd22, %rd21, %rd12, %rd10, %rd25, %rd11, %rd23;
+	.reg .u32 %r5, %r8, %r16, %r27, %r0, %r4, %r3, %r30, %r6, %r28, %r2, %r15, %r24, %r13, %r14, %r1, %r7, %r29, %r17;
+	.reg .u64 %rd25, %rd11, %rd18, %rd26, %rd10, %rd20, %rd12, %rd22, %rd9, %rd21, %rd23;
 	.reg .pred %p19;
 vector_add_loop_kernel_start:
 	ld.param.u64 %rd9, [param9];
@@ -32,12 +32,12 @@ vector_add_loop_kernel_start:
 	shl.b32 %r17, %r15, %r16;
 	mov.u32 %r0, %r17;
 loop_0_start:
-block_13_start:
+block_9_start:
 	cvt.u64.u32 %rd18, %r1;
 	setp.lt.u64 %p19, %rd18, %rd12;
-	@%p19 bra block_13_end;
+	@%p19 bra block_9_end;
 	ret;
-block_13_end:
+block_9_end:
 	cvt.u64.u32 %rd20, %r0;
 	add.u64 %rd21, %rd11, %rd20;
 	cvt.u64.u32 %rd22, %r0;

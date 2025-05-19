@@ -2,7 +2,6 @@ use crate::memory::{IndexType, MemoryManager, RegisterType};
 use crate::ptx_module::{PTXEntryPoint, PTXInstruction};
 use crate::stack::Stack;
 
-
 pub fn handle_local_get(
     local_index: u32,
     kernel_info: &crate::kernel_detector::KernelInfo,

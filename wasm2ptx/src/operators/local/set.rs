@@ -37,7 +37,6 @@ pub fn handle_local_set(
                     source: memory_manager.format_register(converted_val, converted_type),
                 });
             } else {
-                // Handle the case where register allocation failed
                 panic!("Failed to get or create bridge register for special index {} in LocalSet", idx);
             }
         }

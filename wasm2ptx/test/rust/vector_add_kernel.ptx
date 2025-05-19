@@ -6,15 +6,15 @@
 	.param .u64 param11,
 	.param .u64 param12
 ) {
-	.reg .u32 %r3, %r7, %r8, %r0, %r2, %r20, %r1, %r21, %r17, %r4;
-	.reg .u64 %rd11, %rd13, %rd16, %rd9, %rd19, %rd18, %rd5, %rd15, %rd12, %rd10, %rd14;
+	.reg .u32 %r3, %r8, %r2, %r21, %r1, %r20, %r4, %r7, %r0, %r17;
+	.reg .u64 %rd19, %rd9, %rd10, %rd13, %rd12, %rd14, %rd18, %rd16, %rd11, %rd5, %rd15;
 	.reg .pred %p6;
 vector_add_kernel_start:
 	ld.param.u64 %rd9, [param9];
 	ld.param.u64 %rd10, [param10];
 	ld.param.u64 %rd11, [param11];
 	ld.param.u64 %rd12, [param12];
-block_12_start:
+block_8_start:
 	mov.u32 %r0, %ntid.x;
 	mov.u32 %r1, %ctaid.x;
 	mul.lo.s32 %r2, %r0, %r1;
@@ -23,7 +23,7 @@ block_12_start:
 	mov.u32 %r1, %r4;
 	cvt.u64.u32 %rd5, %r4;
 	setp.ge.u64 %p6, %rd5, %rd12;
-	@%p6 bra block_12_end;
+	@%p6 bra block_8_end;
 	mov.u32 %r7, 2;
 	shl.b32 %r8, %r1, %r7;
 	mov.u32 %r1, %r8;
@@ -37,7 +37,7 @@ block_12_start:
 	ld.global.u32 %r20, [%rd19];
 	add.u32 %r21, %r17, %r20;
 	st.global.u32 [%rd14], %r21;
-block_12_end:
+block_8_end:
 vector_add_kernel_end:
 }
 

@@ -6,8 +6,6 @@ use crate::operators::local;
 use crate::ptx_module::PTXModule;
 use super::ptx_module::{PTXEntryPoint, PTXParameter, PTXInstruction};
 use super::label_context::{LabelContext, LabelKind, LabelFrame};
-
-
  
 pub fn translate_to_ptx(
     ops: &[WasmOperator],
@@ -23,7 +21,6 @@ pub fn translate_to_ptx(
     for i in kernel_info.first_data_param..(param_count) {
         parameters.push(PTXParameter::new(format!("param{}", i), ".u64".to_string()));
     }
-
     let mut entry_point = PTXEntryPoint::new(kernel_info.name.clone(), parameters);
     let func_start = format!("{}_start", kernel_info.name);
     let func_end = format!("{}_end", kernel_info.name);
@@ -41,7 +38,6 @@ pub fn translate_to_ptx(
                     param_index:  i as usize,
                     destination: formatted_result.clone(),
                 });
-                //stack.push(result_reg, reg_type);
             } else {
                 panic!("Failed to allocate register for kernel parameter param{}", i);
             }

@@ -8,9 +8,9 @@
 	.param .u64 param13,
 	.param .u64 param14
 ) {
-	.reg .u32 %r4, %r25, %r31, %r64, %r15, %r16, %r43, %r32, %r56, %r17, %r49, %r72, %r2, %r57, %r52, %r5, %r55, %r0, %r21, %r45, %r60, %r78, %r18, %r3, %r75, %r8, %r23, %r1, %r39;
-	.reg .u64 %rd62, %rd26, %rd53, %rd76, %rd40, %rd10, %rd35, %rd33, %rd69, %rd59, %rd11, %rd19, %rd36, %rd24, %rd34, %rd71, %rd42, %rd38, %rd50, %rd68, %rd54, %rd29, %rd27, %rd30, %rd13, %rd73, %rd70, %rd37, %rd46, %rd77, %rd58, %rd28, %rd41, %rd61, %rd12, %rd44, %rd65, %rd14, %rd63, %rd6, %rd9, %rd48, %rd66;
-	.reg .pred %p74, %p67, %p20, %p47, %p51, %p22, %p7;
+	.reg .u32 %r31, %r8, %r78, %r43, %r17, %r32, %r56, %r39, %r0, %r55, %r72, %r23, %r45, %r15, %r5, %r64, %r52, %r49, %r60, %r16, %r21, %r18, %r25, %r1, %r57, %r75, %r2, %r3, %r4;
+	.reg .u64 %rd69, %rd70, %rd50, %rd54, %rd11, %rd6, %rd9, %rd27, %rd48, %rd73, %rd68, %rd34, %rd58, %rd44, %rd65, %rd26, %rd71, %rd24, %rd41, %rd37, %rd66, %rd12, %rd53, %rd13, %rd42, %rd40, %rd76, %rd10, %rd77, %rd19, %rd38, %rd35, %rd28, %rd46, %rd59, %rd29, %rd33, %rd30, %rd63, %rd14, %rd36, %rd61, %rd62;
+	.reg .pred %p20, %p67, %p74, %p7, %p47, %p22, %p51;
 matrix_mul_kernel_start:
 	ld.param.u64 %rd9, [param9];
 	ld.param.u64 %rd10, [param10];

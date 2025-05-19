@@ -21,6 +21,5 @@ impl Stack {
     pub fn pop(&mut self) -> Option<(u32, RegisterType)> {
         self.stack.pop_front()
     }
-
 }
 

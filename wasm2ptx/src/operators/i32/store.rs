@@ -9,10 +9,8 @@ pub fn handle_i32_store(
     entry_point: &mut PTXEntryPoint,
     reg_type: &RegisterType,
 ) { 
-    // Pop the value to store and the address from the stack
     let (value, value_type) = stack.pop().expect("Stack underflow during I32Store (value)");
     let (address, address_type) = stack.pop().expect("Stack underflow during I32Store (address)");
-
     // Upcast value to reg_type if needed (never downcast)
     let formatted_value = if value_type != *reg_type {
         convert_register(entry_point, memory_manager, value, value_type, *reg_type)

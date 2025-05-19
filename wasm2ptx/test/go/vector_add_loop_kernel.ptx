@@ -6,9 +6,9 @@
 	.param .u64 param11,
 	.param .u64 param12
 ) {
-	.reg .u32 %r32, %r13, %r22, %r18, %r1, %r15, %r31, %r7, %r17, %r20, %r28, %r34, %r21, %r8, %r4, %r33, %r2, %r14, %r0, %r19, %r3, %r16;
-	.reg .u64 %rd29, %rd5, %rd25, %rd12, %rd26, %rd35, %rd10, %rd11, %rd9, %rd24, %rd30, %rd27;
-	.reg .pred %p36, %p23, %p6;
+	.reg .u32 %r13, %r8, %r16, %r21, %r17, %r20, %r22, %r19, %r34, %r7, %r3, %r14, %r0, %r4, %r2, %r31, %r15, %r18, %r28, %r33, %r32, %r1;
+	.reg .u64 %rd35, %rd26, %rd29, %rd11, %rd30, %rd9, %rd5, %rd25, %rd10, %rd12, %rd27, %rd24;
+	.reg .pred %p6, %p36, %p23;
 vector_add_loop_kernel_start:
 	ld.param.u64 %rd9, [param9];
 	ld.param.u64 %rd10, [param10];

@@ -1,9 +1,6 @@
 
 use std::{collections::{HashMap, VecDeque}, hash::Hash};
-
 use crate::ptx_module::PTXInstruction;
-
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RegisterType {
@@ -24,7 +21,6 @@ pub enum IndexType {
     KernelParameter(usize),
     LocalVariable(usize),
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SpecialRegister {
@@ -61,7 +57,6 @@ impl std::fmt::Display for SpecialRegister {
         write!(f, "{}", name)
     }
 }
-
 
 impl RegisterType {
     pub fn is_32(&self) -> bool {
@@ -121,9 +116,6 @@ impl RegisterType {
     }
 }
 
-/*
- Consider other data structures or explanations for these 
-*/
 pub struct MemoryManager {
     register_types: HashMap<u32, RegisterType>,
     free_registers: VecDeque<u32>,            
@@ -160,7 +152,6 @@ impl MemoryManager {
         }
     }
 
-
     pub fn format_register(&self, reg: u32, reg_type: RegisterType) -> String {    
         let prefix = match reg_type {
             RegisterType::U32 | RegisterType::S32 | RegisterType::I32 => "%r",
@@ -173,23 +164,17 @@ impl MemoryManager {
         format!("{}{}", prefix, reg)
     }
 
-    // filepath: wasm2ptx/src/memory.rs
-    // ...existing code...
     pub fn get_or_create_bridge_register(&mut self, special_index: usize, reg_type: RegisterType) -> Option<(u32, RegisterType)> {
-        // Use special_index as the key
         if let Some((bridge_reg, bridge_type)) = self.bridge_registers.get(&special_index) {
             if *bridge_type == reg_type {
-                // Exact type match, return as is
                 return Some((*bridge_reg, *bridge_type));
             } else {
-                // Type mismatch: allocate a new bridge register of the requested type
                 let (new_bridge_reg, new_bridge_type) = self.new_register(reg_type)?;
                 self.bridge_registers.insert(special_index, (new_bridge_reg, new_bridge_type));
                 return Some((new_bridge_reg, new_bridge_type));
             }
         }
         let (bridge_reg, bridge_type) = self.new_register(reg_type).expect("Failed to allocate bridge register");
-        // Insert with special_index as key and (reg, type) as value
         self.bridge_registers.insert(special_index, (bridge_reg, reg_type));
         Some((bridge_reg, bridge_type))
     }
@@ -226,13 +211,10 @@ impl MemoryManager {
         }
     }
     
-
     pub fn assign_parameter_register(&mut self, param_idx: usize, reg_type: RegisterType) -> Option<(u32, RegisterType)> {
-        // Try to use param_idx as the register number for the parameter
         let reg = if let Some(pos) = self.free_registers.iter().position(|&r| r == param_idx as u32) {
             self.free_registers.remove(pos).unwrap()
         } else {
-            // Fallback: just pop the next available register
             self.free_registers.pop_front()?
         };
         self.register_types.insert(reg, reg_type);
@@ -274,7 +256,7 @@ impl MemoryManager {
             }
             IndexType::LocalVariable(idx) => {
                 let reg = self.free_registers.pop_front()?;
-                self.local_registers.insert(idx as u32, (reg, reg_type)); // Store both reg and type
+                self.local_registers.insert(idx as u32, (reg, reg_type)); 
                 self.register_types.insert(reg, reg_type);
                 Some((reg, reg_type))
             }
@@ -365,5 +347,3 @@ impl MemoryManager {
         declarations
     }
 }
-
-

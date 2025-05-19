@@ -5,7 +5,6 @@ use crate::label_context::{LabelFrame, LabelKind, LabelContext};
 use crate::memory::{IndexType, MemoryManager, RegisterType};
 use crate::stack::Stack;
 
-
 pub fn handle_block(
     block_id: usize,
     kernel_info: &crate::kernel_detector::KernelInfo,
