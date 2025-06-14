@@ -1,0 +1,43 @@
+.version 8.0
+.target sm_80
+.visible .entry relu_kernel(
+	.param .u64 param9,
+	.param .u64 param10,
+	.param .u64 param11
+) {
+	.reg .u32 %r0, %r1, %r2, %r3, %r4, %r7, %r8;
+	.reg .u64 %rd5, %rd9, %rd10, %rd11, %rd12, %rd13, %rd14, %rd15;
+	.reg .f32 %f16, %f17, %f18, %f19, %f21;
+	.reg .pred %p6, %p20;
+relu_kernel_start:
+	ld.param.u64 %rd9, [param9];
+	ld.param.u64 %rd10, [param10];
+	ld.param.u64 %rd11, [param11];
+block_15_start:
+	mov.u32 %r0, %ntid.x;
+	mov.u32 %r1, %ctaid.x;
+	mul.lo.s32 %r2, %r0, %r1;
+	mov.u32 %r3, %tid.x;
+	add.u32 %r4, %r2, %r3;
+	mov.u32 %r1, %r4;
+	cvt.u64.u32 %rd5, %r4;
+	setp.ge.u64 %p6, %rd5, %rd11;
+	@%p6 bra block_15_end;
+	mov.u32 %r7, 2;
+	shl.b32 %r8, %r1, %r7;
+	mov.u32 %r1, %r8;
+	cvt.u64.u32 %rd12, %r8;
+	add.u64 %rd13, %rd10, %rd12;
+	cvt.u64.u32 %rd14, %r1;
+	add.u64 %rd15, %rd9, %rd14;
+	ld.global.f32 %f16, [%rd15];
+	mov.f32 %f17, %f16;
+	mov.f32 %f18, 0.0;
+	mov.f32 %f19, 0.0;
+	setp.gt.f32 %p20, %f17, %f19;
+	selp.f32 %f21, %f16, %f18, %p20;
+	st.global.f32 [%rd13], %f21;
+block_15_end:
+relu_kernel_end:
+}
+

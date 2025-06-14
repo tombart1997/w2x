@@ -31,10 +31,25 @@ pub enum WasmOperator {
     I32GeU,
     I32GtU,
     I32Shl,
-    I32Store { reg_type: RegisterType },
-    I32Load { reg_type: RegisterType },
+    I32ShrU,
+    I32Store { alignment: u8, offset: u64, reg_type: RegisterType },
+    I32Load {  alignment: u8, offset: u64, reg_type: RegisterType },
+    I32Rotl,
+    I32Rotr,
+    I32Or,
+    I32DivU,
+    F32Load {  alignment: u8, offset: u64, reg_type: RegisterType },
+    F32Store {  alignment: u8, offset: u64, reg_type: RegisterType },
+    F32Const { value: f32, reg_type: RegisterType },
+    F32Add,
+    F32Sub,
+    F32Mul,
+    F32Div,
+    F32Gt,
+    F32Lt,
     BrIf { relative_depth: u32 },
     Loop { block_id: usize },
+    Select,
     End,
     Return,
     Block { block_id: usize },
@@ -105,12 +120,42 @@ pub fn convert_wasm_operator(op: &Operator, all_variables: &[wasmparser::ValType
         Operator::I32GtU => WasmOperator::I32GtU,
         Operator::I32Shl => WasmOperator::I32Shl,
         Operator::I32Ne => WasmOperator::I32Ne,   
-        Operator::I32Store { memarg: _ } => WasmOperator::I32Store { 
+        Operator::I32Rotl => WasmOperator::I32Rotl,
+        Operator::Select => WasmOperator::Select,
+        Operator::I32Rotr => WasmOperator::I32Rotr,
+        Operator::I32ShrU => WasmOperator::I32ShrU,
+        Operator::I32Or => WasmOperator::I32Or,
+        Operator::I32Store { memarg } => WasmOperator::I32Store { 
+            alignment: memarg.align,
+            offset: memarg.offset,
             reg_type: RegisterType::U32 
         },
-        Operator::I32Load { memarg: _ } => WasmOperator::I32Load { 
+        Operator::I32Load { memarg } => WasmOperator::I32Load { 
+            alignment: memarg.align,
+            offset: memarg.offset,
             reg_type: RegisterType::U32 
         },
+        Operator::I32DivU => WasmOperator::I32DivU,
+        Operator::F32Const { value } => WasmOperator::F32Const { 
+            value: f32::from_bits(value.bits()),
+            reg_type: RegisterType::F32 
+        },
+        Operator::F32Add => WasmOperator::F32Add,
+        Operator::F32Sub => WasmOperator::F32Sub,
+        Operator::F32Mul => WasmOperator::F32Mul,
+        Operator::F32Div => WasmOperator::F32Div,
+        Operator::F32Gt => WasmOperator::F32Gt,
+        Operator::F32Store { memarg } => WasmOperator::F32Store { 
+            alignment: memarg.align,
+            offset: memarg.offset,
+            reg_type: RegisterType::F32 
+        },
+        Operator::F32Load { memarg } => WasmOperator::F32Load { 
+            alignment: memarg.align,
+            offset: memarg.offset,
+            reg_type: RegisterType::F32 
+        },
+        Operator::F32Lt => WasmOperator::F32Lt,
         Operator::BrIf { relative_depth } => WasmOperator::BrIf { relative_depth: *relative_depth },
                 Operator::If { .. } => {
             static mut BLOCK_COUNTER: usize = 0;

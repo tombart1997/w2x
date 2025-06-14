@@ -7,6 +7,8 @@ pub fn handle_i32_load(
     stack: &mut Stack,
     entry_point: &mut PTXEntryPoint,
     reg_type: &RegisterType,
+    alignment: &u8,
+    offset: &u64,
 ) { 
     let (addr_reg, address_type) = stack.pop().expect("Stack underflow during I32Load (offset)");
     let (addr_reg_f, address_type_f) = convert_register(entry_point, memory_manager, addr_reg, address_type, RegisterType::U64);

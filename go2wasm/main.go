@@ -64,6 +64,7 @@ func vector_add_loop_kernel(
     }
 }
 
+/*
 //export matrix_mul_kernel
 func matrix_mul_kernel(
     threadIdx ThreadIdx,
@@ -91,4 +92,36 @@ func matrix_mul_kernel(
         c_idx := row*p + col
         pc[c_idx] = sum
     }
+}
+*/
+
+//export matrix_mul_kernel
+func matrix_mul_kernel(
+	threadIdx ThreadIdx,
+	blockIdx BlockIdx,
+	blockDim BlockDim,
+	a *int32,
+	b *int32,
+	c *int32,
+	m uint32,
+	n uint32,
+	p uint32,
+) {
+	row := blockIdx.Y*blockDim.Y + threadIdx.Y
+	col := blockIdx.X*blockDim.X + threadIdx.X
+
+	if row >= m || col >= p {
+		return
+	}
+
+	pa := (*[1 << 30]int32)(unsafe.Pointer(a))
+	pb := (*[1 << 30]int32)(unsafe.Pointer(b))
+	pc := (*[1 << 30]int32)(unsafe.Pointer(c))
+
+	sum := int32(0)
+	for k := uint32(0); k < n; k++ {
+		sum += pa[row*n+k] * pb[k*p+col]
+	}
+
+	pc[row*p+col] = sum
 }

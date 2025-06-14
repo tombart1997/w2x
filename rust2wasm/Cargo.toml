@@ -13,4 +13,4 @@ path = "src/main.rs"
 [profile.release]
 lto = true
 opt-level = "z"
-
+panic = "abort"

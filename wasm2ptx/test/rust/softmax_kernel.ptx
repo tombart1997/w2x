@@ -1,0 +1,145 @@
+.version 8.0
+.target sm_80
+.visible .entry softmax_kernel(
+	.param .u64 param9,
+	.param .u64 param10,
+	.param .u64 param11,
+	.param .u64 param12
+) {
+	.reg .u32 %r0, %r1, %r2, %r3, %r4, %r13, %r21, %r29, %r32, %r36, %r40, %r72, %r76, %r79, %r85, %r88;
+	.reg .u64 %rd5, %rd7, %rd8, %rd9, %rd10, %rd11, %rd12, %rd14, %rd15, %rd16, %rd19, %rd22, %rd23, %rd24, %rd25, %rd30, %rd31, %rd37, %rd38, %rd39, %rd41, %rd42, %rd73, %rd74, %rd75, %rd77, %rd78, %rd80, %rd81, %rd86, %rd87, %rd89, %rd90;
+	.reg .f32 %f17, %f18, %f26, %f27, %f34, %f35, %f43, %f44, %f45, %f46, %f47, %f48, %f50, %f51, %f53, %f54, %f55, %f56, %f57, %f58, %f59, %f60, %f61, %f62, %f63, %f64, %f65, %f66, %f67, %f68, %f69, %f70, %f71, %f82, %f84;
+	.reg .pred %p6, %p20, %p28, %p33, %p49, %p52, %p83;
+softmax_kernel_start:
+	ld.param.u64 %rd9, [param9];
+	ld.param.u64 %rd10, [param10];
+	ld.param.u64 %rd11, [param11];
+	ld.param.u64 %rd12, [param12];
+block_19_start:
+	mov.u32 %r0, %ntid.y;
+	mov.u32 %r1, %ctaid.y;
+	mul.lo.s32 %r2, %r0, %r1;
+	mov.u32 %r3, %tid.y;
+	add.u32 %r4, %r2, %r3;
+	mov.u32 %r1, %r4;
+	cvt.u64.u32 %rd5, %r4;
+	setp.ge.u64 %p6, %rd5, %rd11;
+	@%p6 bra block_19_end;
+	cvt.u64.u32 %rd7, %r1;
+	mul.lo.s64 %rd8, %rd7, %rd12;
+	mov.u64 %rd11, %rd8;
+	mov.u32 %r13, 2;
+	shl.b64 %rd14, %rd8, %r13;
+	add.u64 %rd15, %rd9, %rd14;
+	mov.u64 %rd16, %rd15;
+	mov.f32 %f17, 0fFF800000;
+	mov.f32 %f18, %f17;
+	mov.u64 %rd19, %rd12;
+loop_0_22_start:
+block_20_start:
+	setp.ne.u64 %p20, %rd19, 0;
+	@%p20 bra block_20_end;
+	mov.u32 %r21, 2;
+	shl.b64 %rd22, %rd11, %r21;
+	mov.u64 %rd19, %rd22;
+	add.u64 %rd23, %rd10, %rd22;
+	mov.u64 %rd16, %rd23;
+	add.u64 %rd24, %rd9, %rd19;
+	mov.u64 %rd25, %rd24;
+	mov.f32 %f26, 0.0;
+	mov.f32 %f27, %f26;
+	mov.u64 %rd19, %rd12;
+loop_0_17_start:
+block_21_start:
+	setp.ne.u64 %p28, %rd19, 0;
+	@%p28 bra block_21_end;
+	mov.u32 %r29, 2;
+	shl.b64 %rd30, %rd11, %r29;
+	add.u64 %rd31, %rd10, %rd30;
+	mov.u64 %rd19, %rd31;
+loop_0_8_start:
+	cvt.u32.u64 %r32, %rd12;
+	setp.eq.u32 %p33, %r32, 0;
+	@%p33 bra block_19_end;
+	ld.global.f32 %f34, [%rd19];
+	div.f32.rn %f35, %f34, %f27;
+	st.global.f32 [%rd19], %f35;
+	mov.s32 %r36, -1;
+	cvt.s64.s32 %rd37, %r36;
+	add.s64 %rd38, %rd12, %rd37;
+	cvt.u64.s64 %rd39, %rd38;
+	mov.u64 %rd12, %rd39;
+	mov.u32 %r40, 4;
+	cvt.u64.u32 %rd41, %r40;
+	add.u64 %rd42, %rd19, %rd41;
+	mov.u64 %rd19, %rd42;
+	bra loop_0_8_start;
+loop_0_8_end:
+block_21_end:
+	mov.f32 %f43, 0f42b00000;
+	mov.f32 %f44, 0fc2b00000;
+	ld.global.f32 %f45, [%rd25];
+	sub.f32 %f46, %f45, %f18;
+	mov.f32 %f47, %f46;
+	mov.f32 %f48, 0fc2b00000;
+	setp.lt.f32 %p49, %f47, %f48;
+	selp.f32 %f50, %f44, %f46, %p49;
+	mov.f32 %f51, 0f42b00000;
+	setp.gt.f32 %p52, %f47, %f51;
+	selp.f32 %f53, %f43, %f50, %p52;
+	mov.f32 %f47, %f53;
+	mov.f32 %f54, 0f3f000000;
+	mul.f32 %f55, %f47, %f54;
+	mov.f32 %f56, 0f3e2aab8a;
+	mul.f32 %f57, %f47, %f56;
+	mov.f32 %f58, 0f3d2aab04;
+	mul.f32 %f59, %f47, %f58;
+	mov.f32 %f60, 0f3f800000;
+	add.f32 %f61, %f59, %f60;
+	mul.f32 %f62, %f57, %f61;
+	mov.f32 %f63, 0f3f800000;
+	add.f32 %f64, %f62, %f63;
+	mul.f32 %f65, %f55, %f64;
+	mov.f32 %f66, 0f3f800000;
+	add.f32 %f67, %f65, %f66;
+	mul.f32 %f68, %f53, %f67;
+	mov.f32 %f69, 0f3f800000;
+	add.f32 %f70, %f68, %f69;
+	mov.f32 %f47, %f70;
+	st.global.f32 [%rd16], %f70;
+	add.f32 %f71, %f27, %f47;
+	mov.f32 %f27, %f71;
+	mov.s32 %r72, -1;
+	cvt.s64.s32 %rd73, %r72;
+	add.s64 %rd74, %rd19, %rd73;
+	mov.s64 %rd75, %rd74;
+	mov.u32 %r76, 4;
+	cvt.u64.u32 %rd77, %r76;
+	add.u64 %rd78, %rd16, %rd77;
+	mov.u64 %rd16, %rd78;
+	mov.u32 %r79, 4;
+	cvt.u64.u32 %rd80, %r79;
+	add.u64 %rd81, %rd25, %rd80;
+	mov.u64 %rd25, %rd81;
+	bra loop_0_17_start;
+loop_0_17_end:
+block_20_end:
+	ld.global.f32 %f82, [%rd16];
+	mov.f32 %f47, %f82;
+	setp.gt.f32 %p83, %f47, %f18;
+	selp.f32 %f84, %f82, %f18, %p83;
+	mov.f32 %f18, %f84;
+	mov.s32 %r85, -1;
+	cvt.s64.s32 %rd86, %r85;
+	add.s64 %rd87, %rd75, %rd86;
+	mov.s64 %rd75, %rd87;
+	mov.u32 %r88, 4;
+	cvt.u64.u32 %rd89, %r88;
+	add.u64 %rd90, %rd16, %rd89;
+	mov.u64 %rd16, %rd90;
+	bra loop_0_22_start;
+loop_0_22_end:
+block_19_end:
+softmax_kernel_end:
+}
+

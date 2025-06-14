@@ -1,3 +1,26 @@
+//==============================================================================
+// PTX Code Generation Model
+//==============================================================================
+//
+// This module defines the structure and generation of PTX (Parallel Thread
+// Execution) code from the intermediate representation. It provides:
+//
+// 1. PTXModule: The top-level container for holding multiple entry points
+//    (kernels and device functions) and generating complete PTX source code.
+//
+// 2. PTXEntryPoint: Represents a single CUDA kernel or function with its
+//    parameters, register declarations, and instruction sequence.
+//
+// 3. PTXInstruction: Models individual PTX instructions with their operands,
+//    data types, and formatting rules.
+//
+// 4. PTXParameter: Handles parameter declarations for kernel functions.
+//
+// The design separates structural concerns (modules, functions) from
+// instruction-level details, allowing for clean code generation with proper
+// scoping and formatting of the final PTX assembly code targeting NVIDIA GPUs.
+//==============================================================================
+
 #[derive(Debug, Default)]
 pub struct PTXModule {
     version: String,
@@ -30,6 +53,7 @@ impl PTXModule {
         }
         ptx_code
     }
+
 }
 
 #[derive(Debug, Default)]
@@ -55,7 +79,7 @@ impl PTXEntryPoint {
     }
 
     pub fn add_register_declaration(&mut self, declaration: PTXInstruction) {
-        self.register_declarations.push(declaration);
+        self.register_declaraijijjiiitions.push(declaration);
     }
 }
 
@@ -122,6 +146,12 @@ pub enum PTXInstruction {
         operand1: String,
         operand2: String,
     },
+    Shru {
+        data_type: String,
+        destination: String,
+        operand1: String,
+        operand2: String,
+    },
     Sub {
         data_type: String,
         destination: String,
@@ -130,6 +160,13 @@ pub enum PTXInstruction {
     },
     Mul {
         data_type: String,
+        destination: String,
+        operand1: String,
+        operand2: String,
+    },
+    Div {
+        data_type: String,
+        modifier: String,
         destination: String,
         operand1: String,
         operand2: String,
@@ -166,87 +203,102 @@ impl ToString for PTXInstruction {
     fn to_string(&self) -> String {
         match self {
             PTXInstruction::RegisterDeclaration {
-                register_type,
-                registers,
-            } => {               
-                let mut sorted_registers = registers.clone();
+                        register_type,
+                        registers,
+                    } => {               
+                        let mut sorted_registers = registers.clone();
                 
-                // Sort by the numeric part of register names
-                sorted_registers.sort_by(|a, b| {
-                    // Extract the numeric part from each register name
-                    let a_num = a.chars()
-                        .skip_while(|c| !c.is_numeric())
-                        .collect::<String>()
-                        .parse::<usize>()
-                        .unwrap_or(0);
+                        // Sort by the numeric part of register names
+                        sorted_registers.sort_by(|a, b| {
+                            // Extract the numeric part from each register name
+                            let a_num = a.chars()
+                                .skip_while(|c| !c.is_numeric())
+                                .collect::<String>()
+                                .parse::<usize>()
+                                .unwrap_or(0);
                     
-                    let b_num = b.chars()
-                        .skip_while(|c| !c.is_numeric())
-                        .collect::<String>()
-                        .parse::<usize>()
-                        .unwrap_or(0);
+                            let b_num = b.chars()
+                                .skip_while(|c| !c.is_numeric())
+                                .collect::<String>()
+                                .parse::<usize>()
+                                .unwrap_or(0);
                     
-                    // Compare by numeric value
-                    a_num.cmp(&b_num)
-                });
+                            // Compare by numeric value
+                            a_num.cmp(&b_num)
+                        });
                 
-                format!(
-                    ".reg {} {};", 
-                    register_type, 
-                    sorted_registers.join(", ")
-                )
-            },
+                        format!(
+                            ".reg {} {};", 
+                            register_type, 
+                            sorted_registers.join(", ")
+                        )
+                    },
             PTXInstruction::Load {
-                data_type,
-                destination,
-                address,
-            } => format!("ld.global{} {}, [{}];", data_type, destination, address),
+                        data_type,
+                        destination,
+                        address,
+                    } => format!("ld.global{} {}, [{}];", data_type, destination, address),
+
+            PTXInstruction::Shru {
+                        data_type,
+                        destination,
+                        operand1,
+                        operand2,
+                    } => format!("shru{} {}, {}, {};", data_type, destination, operand1, operand2),
             PTXInstruction::Store {
-                data_type,
-                address,
-                source,
-            } => format!("st.global{} [{}], {};", data_type, address, source),
+                        data_type,
+                        address,
+                        source,
+                    } => format!("st.global{} [{}], {};", data_type, address, source),
             PTXInstruction::Add {
-                data_type,
-                destination,
-                operand1,
-                operand2,
-            } => format!("add{} {}, {}, {};", data_type, destination, operand1, operand2),
+                        data_type,
+                        destination,
+                        operand1,
+                        operand2,
+                    } => format!("add{} {}, {}, {};", data_type, destination, operand1, operand2),
             PTXInstruction::Sub {
-                data_type,
-                destination,
-                operand1,
-                operand2,
-            } => format!("sub{} {}, {}, {};", data_type, destination, operand1, operand2),
+                        data_type,
+                        destination,
+                        operand1,
+                        operand2,
+                    } => format!("sub{} {}, {}, {};", data_type, destination, operand1, operand2),
             PTXInstruction::Mul {
-                data_type,
-                destination,
-                operand1,
-                operand2,
-            } => format!("mul{} {}, {}, {};", data_type, destination, operand1, operand2),
+                        data_type,
+                        destination,
+                        operand1,
+                        operand2,
+                    } => format!("mul{} {}, {}, {};", data_type, destination, operand1, operand2),
             PTXInstruction::Bra { target } => format!("bra {};", target),
             PTXInstruction::Setp {
-                predicate,
-                data_type,
-                operand1,
-                operand2,
-                comparison,
-            } => format!(
-                "setp{}{} {}, {}, {};",
-                comparison, data_type, predicate, operand1, operand2
-            ),
+                        predicate,
+                        data_type,
+                        operand1,
+                        operand2,
+                        comparison,
+                    } => format!(
+                        "setp{}{} {}, {}, {};",
+                        comparison, data_type, predicate, operand1, operand2
+                    ),
             PTXInstruction::Mov {
-                data_type,
-                destination,
-                source,
-            } => format!("mov{} {}, {};", data_type, destination, source),
+                        data_type,
+                        destination,
+                        source,
+                    } => format!("mov{} {}, {};", data_type, destination, source),
             PTXInstruction::ParamLoad { param_index, destination } => {
-                format!("ld.param.u64 {}, [param{}];", destination, param_index)
-            }
+                        format!("ld.param.u64 {}, [param{}];", destination, param_index)
+                    }
             PTXInstruction::Return {} => "ret;".to_string(),
             PTXInstruction::Label { name } => format!("{}:", name),
             PTXInstruction::Other(instruction) => instruction.clone(),
             PTXInstruction::Trap => "trap;".to_string(),
+            PTXInstruction::Div { 
+                data_type, 
+                modifier,
+                destination, 
+                operand1, 
+                operand2 } => {
+                format!("div{}{} {}, {}, {};", data_type, modifier, destination, operand1, operand2)
+            },
         }
     }
 }

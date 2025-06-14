@@ -11,7 +11,6 @@ pub fn handle_special_register(
     reg_type: &RegisterType,
 ) { 
     if let Some((bridge_reg, bridge_type)) = memory_manager.get_bridge_register(local_index as usize) {
-        // If found, push it onto the stack
         stack.push(bridge_reg, bridge_type);
     }  else {
         // If not found, create a new bridge register of the desired type

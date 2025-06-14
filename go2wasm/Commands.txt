@@ -1,2 +1,7 @@
 tinygo build -o go.wasm -target=wasm -opt=z --no-debug --scheduler=none -buildmode=c-shared -panic=trap
 wasm2wat go.wasm -o go.wat
+
+
+
+to generate .ll file (IR of Rust for Wasm)
+rustc --emit llvm-ir --target wasm32-unknown-unknown lib.rs

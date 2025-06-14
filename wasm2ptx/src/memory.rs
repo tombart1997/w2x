@@ -1,3 +1,26 @@
+//==============================================================================
+// WASM to PTX Translator Module
+//==============================================================================
+//
+// This module serves as the core translation engine that converts WebAssembly 
+// operations into PTX instructions. It orchestrates the entire translation 
+// process through several key functions:
+//
+// 1. translate_to_ptx: The main entry point that processes a sequence of WASM
+//    operations, managing control flow structures and building a complete PTX
+//    entry point (kernel or function).
+//
+// 2. translate_to_ptx_instruction: Maps individual WASM operations to their PTX
+//    equivalents by delegating to specialized handler functions.
+//
+// 3. analyze_shared_memory_patterns: Detects shared memory usage patterns in the
+//    WASM code to generate appropriate shared memory declarations in PTX.
+//
+// The translator simulates WebAssembly's stack-based execution model on PTX's
+// register-based architecture by carefully tracking values on a virtual stack
+// and mapping them to PTX registers when needed for computation.
+//==============================================================================
+
 
 use std::{collections::{HashMap, VecDeque}, hash::Hash};
 use crate::ptx_module::PTXInstruction;
@@ -14,12 +37,21 @@ pub enum RegisterType {
     S32,
     Predicate,
     Special(SpecialRegister), 
+    SharesMem(SharedMemoryType),
 }
 
 pub enum IndexType {
     SpecialRegister(usize),
     KernelParameter(usize),
     LocalVariable(usize),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SharedMemoryType {
+    U32,
+    F32,
+    U64,
+    F64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -58,6 +90,24 @@ impl std::fmt::Display for SpecialRegister {
     }
 }
 
+impl SharedMemoryType {
+    pub fn to_ptx_type(&self) -> &'static str {
+        match self {
+            SharedMemoryType::U32 => ".u32",
+            SharedMemoryType::F32 => ".f32",
+            SharedMemoryType::U64 => ".u64",
+            SharedMemoryType::F64 => ".f64",
+        }
+    }
+    
+    pub fn size_in_bytes(&self) -> usize {
+        match self {
+            SharedMemoryType::U32 | SharedMemoryType::F32 => 4,
+            SharedMemoryType::U64 | SharedMemoryType::F64 => 8,
+        }
+    }
+}
+
 impl RegisterType {
     pub fn is_32(&self) -> bool {
         matches!(self, RegisterType::U32 | RegisterType::S32 | RegisterType::I32)
@@ -79,7 +129,10 @@ impl RegisterType {
             RegisterType::I32 => ".u32",
             RegisterType::I64 => ".u64",
             RegisterType::Predicate => ".pred",
-            RegisterType::Special(_) => ".u32",    
+            RegisterType::Special(_) => ".u32",
+            RegisterType::SharesMem(shared_memory_type) => {
+                shared_memory_type.to_ptx_type()
+            }
         }
     }
 
@@ -111,15 +164,22 @@ pub struct MemoryManager {
     bridge_registers: HashMap<usize, (u32, RegisterType)>, 
     local_registers: HashMap<u32, (u32, RegisterType)>,
     parameter_registers: HashMap<u32, RegisterType>,
+    shared_memory_regions: HashMap<u32, (String, SharedMemoryType, usize)>, // id -> (name, type, size)
+    shared_memory_address_ranges: Vec<(u32, u32, u32)>,  // (start_addr, end_addr, region_id)
+    next_shared_id: u32,
+
 }
 
 impl MemoryManager {
     pub fn new(max_registers: u32) -> Self {
-        MemoryManager {
+        let mut manager = MemoryManager {
             free_registers: (0..max_registers).collect(), 
             register_types: HashMap::new(),
             local_registers: HashMap::new(),
             parameter_registers: HashMap::new(),
+            shared_memory_regions: HashMap::new(),
+            shared_memory_address_ranges: Vec::new(),
+            next_shared_id: 0,
             special_registers: {
                 let mut map = HashMap::new();
                 map.insert(SpecialRegister::ThreadIdX, "%tid.x".to_string());
@@ -137,7 +197,14 @@ impl MemoryManager {
                 map
             },
             bridge_registers: HashMap::new(),
-        }
+        };
+        manager
+    }
+
+
+    pub fn is_address_in_registered_shared_memory_range(&self, addr: u32) -> bool {
+        self.shared_memory_address_ranges.iter()
+            .any(|&(start, end, _)| addr >= start && addr < end)
     }
 
     pub fn format_register(&self, reg: u32, reg_type: RegisterType) -> String {    
@@ -147,9 +214,46 @@ impl MemoryManager {
             RegisterType::F32 => "%f",
             RegisterType::F64 => "%fd",
             RegisterType::Predicate => "%p",
-            RegisterType::Special(special_reg) => return self.get_special_register_name(special_reg).unwrap_or_else(|| reg.to_string()), 
+            RegisterType::Special(special_reg) => return self.get_special_register_name(special_reg).unwrap_or_else(|| reg.to_string()),
+            RegisterType::SharesMem(shared_memory_type) => {
+                return format!("%sm{}", shared_memory_type.to_ptx_type());
+            }
         };
         format!("{}{}", prefix, reg)
+    }
+
+        // Methods for shared memory management
+    pub fn register_shared_memory_range(&mut self, start_addr: u32, end_addr: u32, 
+                                       mem_type: SharedMemoryType, 
+                                       name_hint: Option<&str>) -> u32 {
+        let id = self.next_shared_id;
+        self.next_shared_id += 1;
+        
+        let name = name_hint.map(String::from)
+            .unwrap_or_else(|| format!("shared_mem{}", id));
+            
+        let size = (end_addr - start_addr) as usize / mem_type.size_in_bytes();
+
+        self.shared_memory_regions.insert(id, (name, mem_type, size));
+        self.shared_memory_address_ranges.push((start_addr, end_addr, id));
+        
+        id
+    }
+    
+    pub fn is_shared_memory_address(&self, addr: u32) -> Option<(u32, &(String, SharedMemoryType, usize))> {
+        for &(start, end, id) in &self.shared_memory_address_ranges {
+            if addr >= start && addr < end {
+                if let Some(region) = self.shared_memory_regions.get(&id) {
+                    return Some((addr - start, region));
+                }
+            }
+        }
+        None
+    }
+    
+    pub fn is_barrier_address(&self, addr: u32) -> bool {
+        // Special address for __syncthreads()
+        addr == 0xFFFFFFF0
     }
 
     pub fn get_or_create_bridge_register(&mut self, special_index: usize, reg_type: RegisterType) -> Option<(u32, RegisterType)> {

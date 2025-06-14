@@ -1,3 +1,26 @@
+//==============================================================================
+// WASM to PTX Translator Module
+//==============================================================================
+//
+// This module serves as the core translation engine that converts WebAssembly 
+// operations into PTX instructions. It orchestrates the entire translation 
+// process through several key functions:
+//
+// 1. translate_to_ptx: The main entry point that processes a sequence of WASM
+//    operations, managing control flow structures and building a complete PTX
+//    entry point (kernel or function).
+//
+// 2. translate_to_ptx_instruction: Maps individual WASM operations to their PTX
+//    equivalents by delegating to specialized handler functions.
+//
+// 3. (work in progress) analyze_shared_memory_patterns: Detects shared memory usage patterns in the
+//    WASM code to generate appropriate shared memory declarations in PTX.
+//
+// The translator simulates WebAssembly's stack-based execution model on PTX's
+// register-based architecture by carefully tracking values on a virtual stack
+// and mapping them to PTX registers when needed for computation.
+//==============================================================================
+
 use super::ir::WasmOperator;
 use super::memory::MemoryManager;
 use super::stack::Stack;
@@ -5,7 +28,9 @@ use crate::memory::RegisterType;
 use crate::ptx_module::PTXModule;
 use super::ptx_module::{PTXEntryPoint, PTXParameter, PTXInstruction};
 use super::label_context::{LabelContext, LabelKind, LabelFrame};
- 
+use std::{collections::{HashMap, VecDeque}, hash::Hash};
+use super::memory::SharedMemoryType;
+
 pub fn translate_to_ptx(
     ops: &[WasmOperator],
     kernel_info: &crate::kernel_detector::KernelInfo,
@@ -15,6 +40,7 @@ pub fn translate_to_ptx(
 ) -> PTXEntryPoint {
     let mut stack = Stack::new();
     let mut memory_manager = MemoryManager::new(255);
+    analyze_shared_memory_patterns(ops, &mut memory_manager);
     let mut parameters = Vec::new();
     let mut label_ctx = LabelContext::new();
     for i in kernel_info.first_data_param..(param_count) {
@@ -179,20 +205,24 @@ fn translate_to_ptx_instruction(
                 entry_point,
             );
         }
-        WasmOperator::I32Load { reg_type } => {
+        WasmOperator::I32Load { reg_type, alignment, offset } => {
             crate::operators::i32::load::handle_i32_load(
                 memory_manager,
                 stack,
                 entry_point,
                 reg_type,
+                alignment,
+                offset,
             );
         }
-        WasmOperator::I32Store { reg_type } => {
+        WasmOperator::I32Store { reg_type, alignment, offset } => {
             crate::operators::i32::store::handle_i32_store(
                 memory_manager,
                 stack,
                 entry_point,
                 reg_type,
+                alignment,
+                offset,
             );
         }
         WasmOperator::I32LtU => {
@@ -218,6 +248,118 @@ fn translate_to_ptx_instruction(
         }
         WasmOperator::I32Eqz => {
             crate::operators::i32::eqz::handle_i32_eqz(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32Rotl => {
+            crate::operators::i32::rotl::handle_i32_rotl(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32Rotr => {
+            crate::operators::i32::rotr::handle_i32_rotr(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32Or => {
+            crate::operators::i32::or::handle_i32_or(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32DivU => {
+            crate::operators::i32::divu::handle_i32_divu(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32Eq => {
+            crate::operators::i32::eq::handle_i32_eq(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::I32ShrU => {
+            crate::operators::i32::shru::handle_i32_shru(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::F32Add => {
+            crate::operators::f32::add::handle_f32_add(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::F32Sub => {
+            crate::operators::f32::sub::handle_f32_sub(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::F32Mul => {
+            crate::operators::f32::mul::handle_f32_mul(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::F32Div => {
+            crate::operators::f32::div::handle_f32_div(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::F32Const { value, reg_type } => {
+            crate::operators::f32::r#const::handle_f32_const(
+                memory_manager,
+                stack,
+                entry_point,
+                value,
+            );
+        }
+        WasmOperator::F32Load { reg_type, alignment, offset } => {
+            crate::operators::f32::load::handle_f32_load(
+                memory_manager,
+                stack,
+                entry_point,
+                reg_type,
+                alignment,
+                offset,
+            );
+        }
+        WasmOperator::F32Store { reg_type, alignment, offset } => {
+            crate::operators::f32::store::handle_f32_store(
+                memory_manager,
+                stack,
+                entry_point,
+                reg_type,
+                alignment,
+                offset,
+            );
+        }
+        WasmOperator::F32Gt => {
+            crate::operators::f32::gt::handle_f32_gt(
+                memory_manager,
+                stack,
+                entry_point,
+            );
+        }
+        WasmOperator::F32Lt => {
+            crate::operators::f32::lt::handle_f32_lt(
                 memory_manager,
                 stack,
                 entry_point,
@@ -257,6 +399,13 @@ fn translate_to_ptx_instruction(
                 ptx_module,      
                 label_ctx,  
                 current_idx,
+            );
+        }
+        WasmOperator::Select => {
+            crate::operators::controlflow::select::handle_select(
+                memory_manager,
+                stack,
+                entry_point,
             );
         }
         WasmOperator::Block { block_id } => {
@@ -347,6 +496,80 @@ pub fn get_nested_instructions<'a>(
     }
     (nested_instructions, idx)
 }
+
+pub fn analyze_shared_memory_patterns(
+    ops: &[WasmOperator], 
+    memory_manager: &mut MemoryManager
+) {
+    let mut potential_shared_regions: HashMap<u64, (usize, SharedMemoryType)> = HashMap::new();
+    let mut boundary_checks: HashMap<i32, usize> = HashMap::new();
+    
+    for (i, op) in ops.iter().enumerate() {
+        match op {
+            WasmOperator::I32LtU => {
+                if i >= 2 {
+                    if let WasmOperator::I32Const{value: boundary, reg_type: _} = ops[i-1] {
+                        if boundary == 512 || boundary == 1024 || boundary == 2048 {
+                            boundary_checks.insert(boundary, i);
+                        }
+                    }
+                }
+            },
+
+            WasmOperator::I32Store { alignment: _, offset, reg_type } 
+            | WasmOperator::F32Store { alignment: _, offset, reg_type }
+            | WasmOperator::I32Load { alignment: _, offset, reg_type }
+            | WasmOperator::F32Load { alignment: _, offset, reg_type } => {
+                analyze_memory_access(*offset, ops, i, &mut potential_shared_regions);
+            },
+            WasmOperator::I32Store { offset, .. } if *offset == 0xFFFFFFF0 => {
+            },
+            
+            _ => {}
+        }
+    }
+    
+    for (base_addr, (size, mem_type)) in potential_shared_regions {
+        if !memory_manager.is_address_in_registered_shared_memory_range(base_addr as u32) {
+            memory_manager.register_shared_memory_range(
+                base_addr as u32, 
+                (base_addr as u64 + (size as u64 * mem_type.size_in_bytes() as u64)) as u32,
+                mem_type,
+                None
+            );
+        }
+    }
+}
+
+fn analyze_memory_access(
+    offset: u64, 
+    ops: &[WasmOperator], 
+    current_idx: usize,
+    potential_regions: &mut HashMap<u64, (usize, SharedMemoryType)>
+) {
+    if offset >= 1048576 {
+        let mem_type = if current_idx > 0 {
+            match ops[current_idx] {
+                WasmOperator::F32Store { .. } | WasmOperator::F32Load { .. } => SharedMemoryType::F32,
+                _ => SharedMemoryType::U32,
+            }
+        } else {
+            SharedMemoryType::U32
+        };
+        let estimated_size = 512; 
+        
+        let base_addr = offset & 0xFFFFF000;
+        
+        potential_regions.entry(base_addr)
+            .and_modify(|region| {
+                if estimated_size > region.0 {
+                    *region = (estimated_size, mem_type);
+                }
+            })
+            .or_insert((estimated_size, mem_type));
+    }
+}
+
 
 pub fn translate_ops_into_entry_point(
     ops: &[WasmOperator],

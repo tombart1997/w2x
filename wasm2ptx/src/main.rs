@@ -1,3 +1,31 @@
+//==============================================================================
+// WASM to PTX Compiler Starting Point
+//==============================================================================
+//
+// This module serves as the starting point for the WebAssembly to PTX compiler,
+// orchestrating the complete translation process:
+//
+// 1. File Processing: Locates and reads WebAssembly (.wasm) files from a
+//    directory, creating output directories for each module.
+//
+// 2. WASM Parsing: Uses wasmparser to extract function signatures, exports,
+//    bodies, and type information from the WebAssembly binary.
+//
+// 3. Kernel Detection: Identifies which exported functions represent CUDA
+//    kernels based on naming conventions and parameter patterns.
+//
+// 4. Translation Pipeline:
+//    a. Converts WASM operators to internal IR
+//    b. Translates IR to PTX using the translator module
+//    c. Generates complete PTX modules with kernel entry points
+//
+// 5. Output Generation: Writes the resulting PTX code to files that can be
+//    loaded by CUDA applications at runtime.
+//
+// The compiler maintains separate stages to allow for clean separation of
+// concerns while managing the complex translation from WebAssembly's stack-based
+// virtual machine to PTX's register-based GPU assembly language.
+//==============================================================================
 mod translator;
 mod ir;
 mod stack;
@@ -117,7 +145,7 @@ fn process_single_wasm_file(wasm_path: &Path, output_dir: &Path) -> io::Result<(
                 .map(|op| convert_wasm_operator(op, &all_variables.as_slice(), true))
                 .collect();
                 
-            let entry_point = translator::translate_to_ptx(&ops_converted, &kernel_info, params.len(), locals.len(), &mut ptx_module);
+            let entry_point: ptx_module::PTXEntryPoint = translator::translate_to_ptx(&ops_converted, &kernel_info, params.len(), locals.len(), &mut ptx_module);
             ptx_module.add_entry_point(entry_point);
             let ptx_code = ptx_module.generate_ptx_string();
             let ptx_filename = format!("{}.ptx", function_name);

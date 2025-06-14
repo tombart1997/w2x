@@ -29,7 +29,10 @@ pub fn handle_i32_geu(
         (left, left_type)
     };
     
-    let data_type = if use_u64 { ".u64" } else { ".u32" };
+   let data_type = match use_u64 {
+        true => ".u64".to_string(),
+        false => ".u32".to_string(),
+    };
     let comparison = ".ge".to_string();
     
     if let Some((pred_reg, reg_type)) = memory_manager.new_predicate_register() {

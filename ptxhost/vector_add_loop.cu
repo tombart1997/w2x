@@ -7,60 +7,60 @@ const char* ptx_code = R"ptx(
 .version 8.0
 .target sm_80
 .visible .entry vector_add_loop_kernel(
-    .param .u64 param9,
-    .param .u64 param10,
-    .param .u64 param11,
-    .param .u64 param12
+	.param .u64 param9,
+	.param .u64 param10,
+	.param .u64 param11,
+	.param .u64 param12
 ) {
-    .reg .u32 %r0, %r1, %r2, %r8, %r30, %r7, %r17, %r24, %r28, %r13, %r5, %r14, %r15, %r3, %r16, %r29, %r27, %r4, %r6;
-    .reg .u64 %rd25, %rd9, %rd12, %rd11, %rd23, %rd10, %rd21, %rd18, %rd26, %rd22, %rd20;
-    .reg .pred %p19;
-    vector_add_loop_kernel_start:
-    ld.param.u64 %rd9, [param9];
-    ld.param.u64 %rd10, [param10];
-    ld.param.u64 %rd11, [param11];
-    ld.param.u64 %rd12, [param12];
-    mov.u32 %r0, %ntid.x;
-    mov.u32 %r1, %ntid.z;
-    mul.lo.s32 %r2, %r0, %r1;
-    mov.u32 %r3, %ntid.y;
-    mul.lo.s32 %r4, %r2, %r3;
-    mov.u32 %r3, %r4;
-    mov.u32 %r5, 2;
-    shl.b32 %r6, %r4, %r5;
-    mov.u32 %r7, %r6;
-    mov.u32 %r8, %ctaid.x;
-    mul.lo.s32 %r13, %r0, %r8;
-    mov.u32 %r14, %tid.x;
-    add.u32 %r15, %r13, %r14;
-    mov.u32 %r1, %r15;
-    mov.u32 %r16, 2;
-    shl.b32 %r17, %r15, %r16;
-    mov.u32 %r0, %r17;
-    loop_0_start:
-    block_2_start:
-    cvt.u64.u32 %rd18, %r1;
-    setp.lt.u64 %p19, %rd18, %rd12;
-    @%p19 bra block_2_end;
-    ret;
-    block_2_end:
-    cvt.u64.u32 %rd20, %r0;
-    add.u64 %rd21, %rd11, %rd20;
-    cvt.u64.u32 %rd22, %r0;
-    add.u64 %rd23, %rd10, %rd22;
-    ld.global.u32 %r24, [%rd23];
-    cvt.u64.u32 %rd25, %r0;
-    add.u64 %rd26, %rd9, %rd25;
-    ld.global.u32 %r27, [%rd26];
-    add.u32 %r28, %r24, %r27;
-    st.global.u32 [%rd21], %r28;
-    add.u32 %r29, %r0, %r7;
-    mov.u32 %r0, %r29;
-    add.u32 %r30, %r1, %r3;
-    mov.u32 %r1, %r30;
-    bra loop_0_start;
-    loop_0_end:
-    vector_add_loop_kernel_end:
+	.reg .u32 %r0, %r1, %r2, %r3, %r4, %r5, %r6, %r7, %r8, %r13, %r14, %r15, %r16, %r17, %r24, %r27, %r28, %r29, %r30;
+	.reg .u64 %rd9, %rd10, %rd11, %rd12, %rd18, %rd20, %rd21, %rd22, %rd23, %rd25, %rd26;
+	.reg .pred %p19;
+vector_add_loop_kernel_start:
+	ld.param.u64 %rd9, [param9];
+	ld.param.u64 %rd10, [param10];
+	ld.param.u64 %rd11, [param11];
+	ld.param.u64 %rd12, [param12];
+	mov.u32 %r0, %ntid.x;
+	mov.u32 %r1, %ntid.z;
+	mul.lo.s32 %r2, %r0, %r1;
+	mov.u32 %r3, %ntid.y;
+	mul.lo.s32 %r4, %r2, %r3;
+	mov.u32 %r3, %r4;
+	mov.u32 %r5, 2;
+	shl.b32 %r6, %r4, %r5;
+	mov.u32 %r7, %r6;
+	mov.u32 %r8, %ctaid.x;
+	mul.lo.s32 %r13, %r0, %r8;
+	mov.u32 %r14, %tid.x;
+	add.u32 %r15, %r13, %r14;
+	mov.u32 %r1, %r15;
+	mov.u32 %r16, 2;
+	shl.b32 %r17, %r15, %r16;
+	mov.u32 %r0, %r17;
+loop_0_18_start:
+block_9_start:
+	cvt.u64.u32 %rd18, %r1;
+	setp.lt.u64 %p19, %rd18, %rd12;
+	@%p19 bra block_9_end;
+	ret;
+block_9_end:
+	cvt.u64.u32 %rd20, %r0;
+	add.u64 %rd21, %rd11, %rd20;
+	cvt.u64.u32 %rd22, %r0;
+	add.u64 %rd23, %rd10, %rd22;
+	ld.global.u32 %r24, [%rd23];
+	cvt.u64.u32 %rd25, %r0;
+	add.u64 %rd26, %rd9, %rd25;
+	ld.global.u32 %r27, [%rd26];
+	add.u32 %r28, %r24, %r27;
+	st.global.u32 [%rd21], %r28;
+	add.u32 %r29, %r0, %r7;
+	mov.u32 %r0, %r29;
+	add.u32 %r30, %r1, %r3;
+	mov.u32 %r1, %r30;
+	bra loop_0_18_start;
+loop_0_18_end:
+vector_add_loop_kernel_end:
 }
 )ptx";
 
@@ -119,12 +119,13 @@ int main() {
     }
 
     // Vector size
-    int N = 1024;
+    //int N = 1024;
+	uint64_t N = 1024;
     const int size = N * sizeof(int);
 
     // Allocate host memory
-    std::vector<int> h_A(N, 1); // Vector A initialized to 1
-    std::vector<int> h_B(N, 2); // Vector B initialized to 2
+    std::vector<int> h_A(N, 4); // Vector A initialized to 1
+    std::vector<int> h_B(N, 5); // Vector B initialized to 2
     std::vector<int> h_C(N, 0); // Result vector C
 
     // Allocate device memory
@@ -144,7 +145,7 @@ int main() {
         &d_A,       // param0
         &d_B,       // param1
         &d_C,       // param2
-        &N,          // param3
+        &N          // param3
     };
 
 

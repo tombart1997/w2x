@@ -18,7 +18,7 @@ matrix_mul_kernel_start:
 	ld.param.u64 %rd12, [param12];
 	ld.param.u64 %rd13, [param13];
 	ld.param.u64 %rd14, [param14];
-block_10_start:
+block_11_start:
 	mov.u32 %r0, %ntid.y;
 	mov.u32 %r1, %ctaid.y;
 	mul.lo.s32 %r2, %r0, %r1;
@@ -27,7 +27,7 @@ block_10_start:
 	mov.u32 %r5, %r4;
 	cvt.u64.u32 %rd6, %r4;
 	setp.ge.u64 %p7, %rd6, %rd12;
-	@%p7 bra block_10_end;
+	@%p7 bra block_11_end;
 	mov.u32 %r8, %ntid.x;
 	mov.u32 %r15, %ctaid.x;
 	mul.lo.s32 %r16, %r8, %r15;
@@ -36,7 +36,7 @@ block_10_start:
 	mov.u32 %r15, %r18;
 	cvt.u64.u32 %rd19, %r18;
 	setp.ge.u64 %p20, %rd19, %rd14;
-	@%p20 bra block_10_end;
+	@%p20 bra block_11_end;
 	mov.u32 %r21, 2;
 	shl.b64 %rd22, %rd14, %r21;
 	mov.u64 %rd12, %rd22;
@@ -53,10 +53,10 @@ block_10_start:
 	mov.u64 %rd33, %rd32;
 	mov.u32 %r34, 0;
 	mov.u32 %r3, %r34;
-loop_0_start:
-block_11_start:
+loop_0_38_start:
+block_12_start:
 	setp.ne.u64 %p35, %rd13, 0;
-	@%p35 bra block_11_end;
+	@%p35 bra block_12_end;
 	cvt.u64.u32 %rd36, %r5;
 	mul.lo.s64 %rd37, %rd36, %rd14;
 	mov.u32 %r38, 2;
@@ -67,8 +67,8 @@ block_11_start:
 	cvt.u64.u32 %rd43, %r42;
 	add.u64 %rd44, %rd40, %rd43;
 	st.global.u32 [%rd44], %r3;
-	bra block_10_end;
-block_11_end:
+	bra block_11_end;
+block_12_end:
 	mov.s32 %r45, -1;
 	cvt.s64.s32 %rd46, %r45;
 	add.s64 %rd47, %rd13, %rd46;
@@ -85,9 +85,9 @@ block_11_end:
 	mov.u64 %rd33, %rd55;
 	add.u64 %rd56, %rd27, %rd12;
 	mov.u64 %rd27, %rd56;
-	bra loop_0_start;
-loop_0_end:
-block_10_end:
+	bra loop_0_38_start;
+loop_0_38_end:
+block_11_end:
 matrix_mul_kernel_end:
 }
 

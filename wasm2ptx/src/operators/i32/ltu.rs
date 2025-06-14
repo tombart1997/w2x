@@ -32,7 +32,10 @@ pub fn handle_i32_ltu(
         (left, left_type)
     };
     
-    let data_type = left_type.to_ptx_type();
+    let data_type = match use_u64 {
+        true => ".u64".to_string(),
+        false => ".u32".to_string(),
+    };
     let comparison = ".lt".to_string();
     
     if let Some((pred_reg, reg_type)) = memory_manager.new_predicate_register() {

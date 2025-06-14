@@ -31,10 +31,10 @@ vector_add_loop_kernel_start:
 	mov.u32 %r16, 2;
 	shl.b32 %r17, %r15, %r16;
 	mov.u32 %r0, %r17;
-loop_0_start:
+loop_0_18_start:
 block_9_start:
 	cvt.u64.u32 %rd18, %r1;
-	setp.lt.u32 %p19, %rd18, %rd12;
+	setp.lt.u64 %p19, %rd18, %rd12;
 	@%p19 bra block_9_end;
 	ret;
 block_9_end:
@@ -52,8 +52,8 @@ block_9_end:
 	mov.u32 %r0, %r29;
 	add.u32 %r30, %r1, %r3;
 	mov.u32 %r1, %r30;
-	bra loop_0_start;
-loop_0_end:
+	bra loop_0_18_start;
+loop_0_18_end:
 vector_add_loop_kernel_end:
 }
 

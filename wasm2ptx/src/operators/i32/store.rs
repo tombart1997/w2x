@@ -8,6 +8,8 @@ pub fn handle_i32_store(
     stack: &mut Stack,
     entry_point: &mut PTXEntryPoint,
     reg_type: &RegisterType,
+    alignment: &u8,
+    offset: &u64,
 ) { 
     let (value, value_type) = stack.pop().expect("Stack underflow during I32Store (value)");
     let (address, address_type) = stack.pop().expect("Stack underflow during I32Store (address)");

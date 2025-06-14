@@ -61,6 +61,14 @@ pub fn convert_register(
             "cvt.s64.u32 {}, {};", 
             formatted_result, formatted_source
         )),
+        (RegisterType::U64, RegisterType::F64) => PTXInstruction::Other(format!(
+            "cvt.rn.f64.u64 {}, {};",
+            formatted_result, formatted_source
+        )),
+        (RegisterType::F32, RegisterType::F64) => PTXInstruction::Other(format!(
+            "cvt.rn.f64.f32 {}, {};",
+            formatted_result, formatted_source
+        )),
         _ => panic!(
             "Unsupported conversion from {:?} to {:?}",
             source_type, target_type
